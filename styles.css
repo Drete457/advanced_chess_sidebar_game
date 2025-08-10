@@ -146,8 +146,14 @@ main {
 .chess-board-container {
     position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.board-with-coordinates {
+    position: relative;
+    display: inline-block;
 }
 
 .chess-board {
@@ -264,18 +270,24 @@ main {
 
 /* Coordinates */
 .coordinates {
-    margin-top: 0.5rem;
-    position: relative;
-    width: 656px; /* 8 * 80 + 2 * 4 for borders */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
 .files {
+    position: absolute;
+    bottom: -2rem;
+    left: 4px; /* Account for border */
+    right: 4px; /* Account for border */
     display: flex;
     justify-content: space-around;
     font-weight: bold;
     color: #ffffff;
     font-size: 1.2rem;
-    margin-bottom: 0.5rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     letter-spacing: 2px;
 }
@@ -289,14 +301,12 @@ main {
 
 .ranks {
     position: absolute;
-    left: -2rem;
-    top: 0;
+    left: -2.5rem;
+    top: 4px; /* Account for border */
+    bottom: 4px; /* Account for border */
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 640px; /* Full board height */
-    padding: 40px 0; /* Add padding to center numbers in squares */
-    box-sizing: border-box;
+    justify-content: space-around;
     font-weight: bold;
     color: #ffffff;
     font-size: 1.2rem;
