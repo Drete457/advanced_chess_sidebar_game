@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Chess</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>♔ Advanced Chess ♛</h1>
+            <div class="game-controls">
+                <select id="gameMode">
+                    <option value="human-vs-human">Human vs Human</option>
+                    <option value="human-vs-bot">Human vs Bot</option>
+                </select>
+                <select id="difficulty" style="display: none;">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+                <button id="newGame">New Game</button>
+                <button id="undoMove">Undo</button>
+            </div>
+        </header>
+
+        <main>
+            <div class="game-container">
+                <div class="game-info">
+                    <div class="current-player">
+                        <h3>Turn: <span id="currentPlayerText">White</span></h3>
+                        <div class="timer">
+                            <span id="whiteTimer">15:00</span> - <span id="blackTimer">15:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="captured-pieces">
+                        <div class="captured-white">
+                            <h4>Captured Pieces (Black)</h4>
+                            <div id="capturedWhite" class="pieces-container"></div>
+                        </div>
+                        <div class="captured-black">
+                            <h4>Captured Pieces (White)</h4>
+                            <div id="capturedBlack" class="pieces-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chess-board-container">
+                    <div id="chessBoard" class="chess-board"></div>
+                    <div class="coordinates">
+                        <div class="files">
+                            <span>a</span><span>b</span><span>c</span><span>d</span>
+                            <span>e</span><span>f</span><span>g</span><span>h</span>
+                        </div>
+                        <div class="ranks">
+                            <span>8</span><span>7</span><span>6</span><span>5</span>
+                            <span>4</span><span>3</span><span>2</span><span>1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="move-history">
+                    <h3>Move History</h3>
+                    <div id="moveHistory" class="moves-list"></div>
+                </div>
+            </div>
+
+            <div class="status-panel">
+                <div id="gameStatus" class="game-status"></div>
+                <div id="moveHints" class="move-hints">
+                    <h4>Possible Moves:</h4>
+                    <div id="possibleMoves" class="possible-moves"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="promotionModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Choose pawn promotion:</h3>
+            <div class="promotion-pieces">
+                <button class="promotion-piece" data-piece="queen">♕</button>
+                <button class="promotion-piece" data-piece="rook">♖</button>
+                <button class="promotion-piece" data-piece="bishop">♗</button>
+                <button class="promotion-piece" data-piece="knight">♘</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="gameOverTitle"></h2>
+            <p id="gameOverMessage"></p>
+            <button id="newGameFromModal">New Game</button>
+        </div>
+    </div>
+
+    <script src="chess.js"></script>
+    <script src="ai.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
