@@ -664,6 +664,11 @@ class ChessGame {
     }
 
     generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling) {
+        // Special notation for castling
+        if (isCastling) {
+            return to.col > from.col ? 'O-O' : 'O-O-O';
+        }
+
         const files = 'abcdefgh';
         const ranks = '87654321';
 
@@ -686,10 +691,8 @@ class ChessGame {
             notation = pieceSymbol + ': ' + notation;
         }
 
-        // Add special indicators
-        if (isCastling) {
-            notation += ' (Castling)';
-        } else if (capturedPiece || isEnPassant) {
+        // Add capture indicator
+        if (capturedPiece || isEnPassant) {
             notation += ' (x)';
         }
 
