@@ -94,89 +94,64 @@ class ChessAI {
         
         if (gameState.gameOver) return null;
 
-        const result = this.minimax(game, this.maxDepth, -Infinity, Infinity, true);
-        return result.move;
-    }
-
-    minimax(game, depth, alpha, beta, isMaximizing) {
-        const gameState = game.getGameState();
-        
-        // Caso base: profundidade 0 ou jogo terminado
-        if (depth === 0 || gameState.gameOver) {
-            return {
-                evaluation: this.evaluatePosition(gameState),
-                move: null
-            };
-        }
+        // Versão simplificada para evitar problemas com undoMove
+        const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
+        if (allMoves.length === 0) return null;
 
         let bestMove = null;
-        const currentColor = gameState.currentPlayer;
-        const allMoves = game.getAllPossibleMoves(currentColor);
+        let bestScore = -Infinity;
 
-        if (isMaximizing) {
-            let maxEval = -Infinity;
-            
-            for (const { piece, moves } of allMoves) {
-                for (const move of moves) {
-                    // Salvar estado antes do movimento
-                    const originalMoveHistory = [...game.moveHistory];
-                    const originalCapturedPieces = {
-                        white: [...game.capturedPieces.white],
-                        black: [...game.capturedPieces.black]
-                    };
-                    
-                    // Fazer movimento temporário
-                    game.makeMove(piece.position, move);
-                    
-                    // Avaliar recursivamente
-                    const evaluation = this.minimax(game, depth - 1, alpha, beta, false).evaluation;
-                    
-                    // Restaurar estado usando desfazer
-                    game.undoMove();
-                    
-                    if (evaluation > maxEval) {
-                        maxEval = evaluation;
-                        bestMove = [piece.position, move];
-                    }
-                    
-                    alpha = Math.max(alpha, evaluation);
-                    if (beta <= alpha) {
-                        break; // Poda alfa-beta
-                    }
+        // Avaliar cada movimento possível
+        for (const { piece, moves } of allMoves) {
+            for (const move of moves) {
+                const score = this.evaluateMove(gameState, piece, move);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = [piece.position, move];
                 }
-                if (beta <= alpha) break;
             }
-            
-            return { evaluation: maxEval, move: bestMove };
-        } else {
-            let minEval = Infinity;
-            
-            for (const { piece, moves } of allMoves) {
-                for (const move of moves) {
-                    // Fazer movimento temporário
-                    game.makeMove(piece.position, move);
-                    
-                    // Avaliar recursivamente
-                    const evaluation = this.minimax(game, depth - 1, alpha, beta, true).evaluation;
-                    
-                    // Restaurar estado
-                    game.undoMove();
-                    
-                    if (evaluation < minEval) {
-                        minEval = evaluation;
-                        bestMove = [piece.position, move];
-                    }
-                    
-                    beta = Math.min(beta, evaluation);
-                    if (beta <= alpha) {
-                        break; // Poda alfa-beta
-                    }
-                }
-                if (beta <= alpha) break;
-            }
-            
-            return { evaluation: minEval, move: bestMove };
         }
+
+        return bestMove;
+    }
+
+    // Avaliar um movimento específico
+    evaluateMove(gameState, piece, move) {
+        let score = 0;
+
+        // Captura de peças
+        const targetPiece = gameState.board[move.row][move.col];
+        if (targetPiece && targetPiece.color !== piece.color) {
+            score += this.positionValues[targetPiece.type];
+        }
+
+        // Valor posicional
+        score += this.getPositionValue(piece, move.row, move.col);
+
+        // Controle do centro
+        if ((move.row === 3 || move.row === 4) && (move.col === 3 || move.col === 4)) {
+            score += 20;
+        }
+
+        // Desenvolvimento de peças
+        if (piece.type === PIECE_TYPES.KNIGHT || piece.type === PIECE_TYPES.BISHOP) {
+            if (!piece.hasMoved) {
+                score += 15;
+            }
+        }
+
+        // Segurança do rei
+        if (piece.type === PIECE_TYPES.KING) {
+            // Penalizar movimento do rei para o centro no início
+            if ((move.row >= 2 && move.row <= 5) && (move.col >= 2 && move.col <= 5)) {
+                score -= 30;
+            }
+        }
+
+        // Adicionar aleatoriedade para tornar os jogos mais interessantes
+        score += Math.random() * 10;
+
+        return score;
     }
 
     evaluatePosition(gameState) {
@@ -301,34 +276,70 @@ class ChessAI {
         return evaluation;
     }
 
-    // Método para fazer um movimento aleatório (dificuldade fácil)
+    // Método para fazer um movimento semi-inteligente (para dificuldade fácil)
     getRandomMove(game) {
         const gameState = game.getGameState();
         const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
         
         if (allMoves.length === 0) return null;
 
-        const randomPiece = allMoves[Math.floor(Math.random() * allMoves.length)];
-        const randomMove = randomPiece.moves[Math.floor(Math.random() * randomPiece.moves.length)];
-        
-        return [randomPiece.piece.position, randomMove];
+        // Priorizar capturas mesmo no modo "aleatório"
+        const captureMoves = [];
+        const normalMoves = [];
+
+        for (const { piece, moves } of allMoves) {
+            for (const move of moves) {
+                const targetPiece = gameState.board[move.row][move.col];
+                if (targetPiece && targetPiece.color !== piece.color) {
+                    captureMoves.push([piece.position, move]);
+                } else {
+                    normalMoves.push([piece.position, move]);
+                }
+            }
+        }
+
+        // 70% chance de capturar se possível
+        if (captureMoves.length > 0 && Math.random() < 0.7) {
+            return captureMoves[Math.floor(Math.random() * captureMoves.length)];
+        }
+
+        // Senão, movimento normal aleatório
+        const allPossibleMoves = [...captureMoves, ...normalMoves];
+        return allPossibleMoves[Math.floor(Math.random() * allPossibleMoves.length)];
     }
 
     // Método principal para obter movimento da IA
     async getAIMove(game) {
         // Simular tempo de "pensamento"
         await new Promise(resolve => {
-            const thinkingTime = this.difficulty === DIFFICULTIES.EASY ? 500 : 
-                               this.difficulty === DIFFICULTIES.MEDIUM ? 1000 : 1500;
+            const thinkingTime = this.difficulty === DIFFICULTIES.EASY ? 300 : 
+                               this.difficulty === DIFFICULTIES.MEDIUM ? 800 : 1200;
             setTimeout(resolve, thinkingTime);
         });
 
-        if (this.difficulty === DIFFICULTIES.EASY && Math.random() < 0.3) {
-            // 30% de chance de movimento aleatório na dificuldade fácil
-            return this.getRandomMove(game);
-        }
+        // Estratégias diferentes baseadas na dificuldade
+        switch (this.difficulty) {
+            case DIFFICULTIES.EASY:
+                // 60% chance de movimento aleatório, 40% melhor movimento
+                if (Math.random() < 0.6) {
+                    return this.getRandomMove(game);
+                }
+                return this.getBestMove(game);
 
-        return this.getBestMove(game);
+            case DIFFICULTIES.MEDIUM:
+                // 20% chance de movimento aleatório, 80% melhor movimento
+                if (Math.random() < 0.2) {
+                    return this.getRandomMove(game);
+                }
+                return this.getBestMove(game);
+
+            case DIFFICULTIES.HARD:
+                // Sempre o melhor movimento
+                return this.getBestMove(game);
+
+            default:
+                return this.getBestMove(game);
+        }
     }
 
     // Alterar dificuldade

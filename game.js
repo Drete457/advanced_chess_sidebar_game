@@ -188,12 +188,27 @@ class ChessGameController {
         this.updateGameStatus('AI thinking...');
 
         try {
-            const aiMove = await this.ai.getAIMove(this.game);
+            console.log('AI turn started for:', this.game.getCurrentPlayer());
             
-            if (aiMove) {
+            const aiMove = await this.ai.getAIMove(this.game);
+            console.log('AI move received:', aiMove);
+            
+            if (aiMove && aiMove.length === 2) {
                 const [from, to] = aiMove;
-                this.game.makeMove(from, to);
-                await this.handleMoveComplete();
+                console.log('Making AI move from', from, 'to', to);
+                
+                const moveSuccess = this.game.makeMove(from, to);
+                console.log('Move success:', moveSuccess);
+                
+                if (moveSuccess) {
+                    await this.handleMoveComplete();
+                } else {
+                    console.error('AI move failed to execute');
+                    this.updateGameStatus('AI move failed - continue playing');
+                }
+            } else {
+                console.error('AI returned invalid move:', aiMove);
+                this.updateGameStatus('AI found no moves - continue playing');
             }
         } catch (error) {
             console.error('AI move error:', error);
