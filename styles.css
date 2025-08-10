@@ -87,7 +87,7 @@ main {
 
 .game-container {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr auto 1fr; 
     gap: 2rem;
     align-items: start;
     max-width: 1400px;
@@ -266,7 +266,7 @@ main {
 .coordinates {
     margin-top: 0.5rem;
     position: relative;
-    width: 656px; 
+    width: 640px; 
 }
 
 .files {
@@ -276,6 +276,7 @@ main {
     color: #ffffff;
     font-size: 1.2rem;
     margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     letter-spacing: 2px;
 }
@@ -600,7 +601,7 @@ main {
     }
     
     .coordinates {
-        width: 496px; 
+        width: 480px; 
     }
     
     .files {
@@ -627,7 +628,7 @@ main {
     }
     
     .coordinates {
-        width: 372px; 
+        width: 360px;
     }
     
     .files {
