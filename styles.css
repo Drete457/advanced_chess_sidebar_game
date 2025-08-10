@@ -87,7 +87,7 @@ main {
 
 .game-container {
     display: grid;
-    grid-template-columns: 1fr auto 1fr; 
+    grid-template-columns: 0.4fr auto 0.4fr; 
     gap: 2rem;
     align-items: start;
     max-width: 1400px;
