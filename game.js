@@ -158,7 +158,24 @@ class ChessGameController {
         this.renderBoard();
         this.updatePossibleMoves();
 
-        // If a move was made
+        // Check if pawn promotion is needed
+        if (result.needsPromotion) {
+            const promotionPiece = await this.showPromotionModal();
+            const moveSuccess = this.game.makePromotionMove(
+                result.promotionMove.from, 
+                result.promotionMove.to, 
+                promotionPiece
+            );
+            
+            if (moveSuccess) {
+                this.selectedSquare = null;
+                this.validMoves = [];
+                await this.handleMoveComplete();
+            }
+            return;
+        }
+
+        // If a move was made (non-promotion)
         if (!this.selectedSquare && this.validMoves.length === 0) {
             await this.handleMoveComplete();
         }
@@ -194,7 +211,17 @@ class ChessGameController {
             if (aiMove && aiMove.length === 2) {
                 const [from, to] = aiMove;
                 
-                const moveSuccess = this.game.makeMove(from, to);
+                // Check if AI move is pawn promotion
+                const piece = this.game.board[from.row][from.col];
+                const isPromotion = piece && piece.type === PIECE_TYPES.PAWN && (to.row === 0 || to.row === 7);
+                
+                let moveSuccess;
+                if (isPromotion) {
+                    // AI always promotes to queen
+                    moveSuccess = this.game.makeMove(from, to, PIECE_TYPES.QUEEN);
+                } else {
+                    moveSuccess = this.game.makeMove(from, to);
+                }
                 
                 if (moveSuccess) {
                     // Small pause for better visual experience

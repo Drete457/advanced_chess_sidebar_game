@@ -138,10 +138,24 @@ class ChessGame {
         // Check if it's a valid move
         const isValidMove = this.validMoves.some(move => move.row === row && move.col === col);
         if (isValidMove) {
-            this.makeMove(this.selectedSquare, { row, col });
-            this.selectedSquare = undefined;
-            this.validMoves = [];
-            return { selected: null, validMoves: [] };
+            // Check if this move requires pawn promotion
+            const movingPiece = this.board[this.selectedSquare.row][this.selectedSquare.col];
+            const isPromotion = movingPiece.type === PIECE_TYPES.PAWN && (row === 0 || row === 7);
+            
+            if (isPromotion) {
+                // Return special promotion state
+                return { 
+                    selected: this.selectedSquare, 
+                    validMoves: this.validMoves,
+                    needsPromotion: true,
+                    promotionMove: { from: this.selectedSquare, to: { row, col } }
+                };
+            } else {
+                this.makeMove(this.selectedSquare, { row, col });
+                this.selectedSquare = undefined;
+                this.validMoves = [];
+                return { selected: null, validMoves: [] };
+            }
         }
 
         // Select new piece if it belongs to current player
@@ -246,6 +260,16 @@ class ChessGame {
         this.checkGameEnd();
 
         return true;
+    }
+
+    // Complete a pawn promotion move
+    makePromotionMove(from, to, promotionPiece) {
+        const success = this.makeMove(from, to, promotionPiece);
+        if (success) {
+            this.selectedSquare = undefined;
+            this.validMoves = [];
+        }
+        return success;
     }
 
     // Get valid moves for a piece
