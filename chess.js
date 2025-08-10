@@ -671,28 +671,21 @@ class ChessGame {
         const files = 'abcdefgh';
         const ranks = '87654321';
 
-        let notation = '';
+        // Format: initial position - final position
+        const fromSquare = files[from.col] + ranks[from.row];
+        const toSquare = files[to.col] + ranks[to.row];
+        
+        let notation = fromSquare + ' - ' + toSquare;
 
-        // Piece type (except pawn)
+        // Add piece type prefix for clarity (except pawns)
         if (piece.type !== PIECE_TYPES.PAWN) {
-            notation += piece.type.charAt(0).toUpperCase();
+            notation = piece.type.charAt(0).toUpperCase() + ': ' + notation;
         }
 
-        // Origin square (only if necessary for disambiguation)
-        notation += files[from.col];
-        if (piece.type === PIECE_TYPES.PAWN && capturedPiece) {
-            // For capturing pawns, always include origin column
-        } else if (piece.type !== PIECE_TYPES.PAWN) {
-            notation += ranks[from.row];
-        }
-
-        // Capture
+        // Add capture indicator
         if (capturedPiece || isEnPassant) {
-            notation += 'x';
+            notation += ' (x)';
         }
-
-        // Destination square
-        notation += files[to.col] + ranks[to.row];
 
         // En passant
         if (isEnPassant) {

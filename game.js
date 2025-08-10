@@ -303,7 +303,7 @@ class ChessGameController {
             if (isWhite) {
                 moveText.textContent = `${moveNumber}. ${move.notation}`;
             } else {
-                moveText.textContent = `${moveNumber}... ${move.notation}`;
+                moveText.textContent = `${moveNumber}. ${move.notation}`;
             }
 
             // Assemble the move element

@@ -290,11 +290,13 @@ main {
 .ranks {
     position: absolute;
     left: -2rem;
-    top: -80px;
+    top: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-around;
-    height: 640px; /* 8 * 80 */
+    justify-content: space-between;
+    height: 640px; /* Full board height */
+    padding: 40px 0; /* Add padding to center numbers in squares */
+    box-sizing: border-box;
     font-weight: bold;
     color: #ffffff;
     font-size: 1.2rem;
