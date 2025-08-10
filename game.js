@@ -165,6 +165,7 @@ class ChessGameController {
     }
 
     async handleMoveComplete() {
+        this.renderBoard(); // Atualizar o tabuleiro visualmente
         this.updateGameInfo();
         this.updateMoveHistory();
         this.updateCapturedPieces();
@@ -201,7 +202,10 @@ class ChessGameController {
                 console.log('Move success:', moveSuccess);
                 
                 if (moveSuccess) {
+                    // Pequena pausa para melhor experiência visual
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     await this.handleMoveComplete();
+                    this.renderBoard(); // Garantir que o tabuleiro seja renderizado após movimento da IA
                 } else {
                     console.error('AI move failed to execute');
                     this.updateGameStatus('AI move failed - continue playing');
