@@ -1,4 +1,4 @@
-// Controlador principal do jogo de xadrez
+// Main chess game controller
 class ChessGameController {
     constructor() {
         this.game = new ChessGame();
@@ -9,7 +9,7 @@ class ChessGameController {
         this.validMoves = [];
         this.promotionResolver = null;
         this.timers = {
-            white: 15 * 60, // 15 minutos em segundos
+            white: 15 * 60, // 15 minutes in seconds
             black: 15 * 60
         };
         this.timerInterval = null;
@@ -29,7 +29,7 @@ class ChessGameController {
     }
 
     setupEventListeners() {
-        // Controles do jogo
+        // Game controls
         document.getElementById('gameMode').addEventListener('change', (e) => {
             this.gameMode = e.target.value;
             this.toggleDifficultySelector();
@@ -48,7 +48,7 @@ class ChessGameController {
             this.undoMove();
         });
 
-        // Modal de promoção
+        // Promotion modal
         document.querySelectorAll('.promotion-piece').forEach(button => {
             button.addEventListener('click', (e) => {
                 const pieceType = e.target.dataset.piece;
@@ -56,13 +56,13 @@ class ChessGameController {
             });
         });
 
-        // Modal de fim de jogo
+        // Game over modal
         document.getElementById('newGameFromModal').addEventListener('click', () => {
             this.hideModal('gameOverModal');
             this.resetGame();
         });
 
-        // Teclas de atalho
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             switch (e.key) {
                 case 'r':
@@ -115,7 +115,7 @@ class ChessGameController {
                     square.appendChild(pieceElement);
                 }
 
-                // Adicionar classes especiais
+                // Add special classes
                 if (this.selectedSquare && this.selectedSquare.row === row && this.selectedSquare.col === col) {
                     square.classList.add('selected');
                 }
@@ -128,7 +128,7 @@ class ChessGameController {
                     }
                 }
 
-                // Destacar último movimento
+                // Highlight last move
                 if (gameState.moveHistory.length > 0) {
                     const lastMove = gameState.moveHistory[gameState.moveHistory.length - 1];
                     if ((lastMove.from.row === row && lastMove.from.col === col) ||
@@ -137,7 +137,7 @@ class ChessGameController {
                     }
                 }
 
-                // Destacar rei em xeque
+                // Highlight king in check
                 if (piece && piece.type === PIECE_TYPES.KING && gameState.inCheck[piece.color]) {
                     square.classList.add('check');
                 }
@@ -158,26 +158,26 @@ class ChessGameController {
         this.renderBoard();
         this.updatePossibleMoves();
 
-        // Se foi feito um movimento
+        // If a move was made
         if (!this.selectedSquare && this.validMoves.length === 0) {
             await this.handleMoveComplete();
         }
     }
 
     async handleMoveComplete() {
-        this.renderBoard(); // Atualizar o tabuleiro visualmente
+        this.renderBoard(); // Update board visually
         this.updateGameInfo();
         this.updateMoveHistory();
         this.updateCapturedPieces();
         this.updatePossibleMoves();
 
-        // Verificar fim de jogo
+        // Check game end
         if (this.game.isGameOver()) {
             this.handleGameEnd();
             return;
         }
 
-        // Se é modo IA e agora é a vez do bot
+        // If AI mode and now it's bot's turn
         if (this.gameMode === GAME_MODES.HUMAN_VS_BOT && 
             this.game.getCurrentPlayer() === COLORS.BLACK) {
             await this.makeAIMove();
@@ -189,23 +189,18 @@ class ChessGameController {
         this.updateGameStatus('AI thinking...');
 
         try {
-            console.log('AI turn started for:', this.game.getCurrentPlayer());
-            
             const aiMove = await this.ai.getAIMove(this.game);
-            console.log('AI move received:', aiMove);
             
             if (aiMove && aiMove.length === 2) {
                 const [from, to] = aiMove;
-                console.log('Making AI move from', from, 'to', to);
                 
                 const moveSuccess = this.game.makeMove(from, to);
-                console.log('Move success:', moveSuccess);
                 
                 if (moveSuccess) {
-                    // Pequena pausa para melhor experiência visual
+                    // Small pause for better visual experience
                     await new Promise(resolve => setTimeout(resolve, 100));
                     await this.handleMoveComplete();
-                    this.renderBoard(); // Garantir que o tabuleiro seja renderizado após movimento da IA
+                    this.renderBoard(); // Ensure board is rendered after AI move
                 } else {
                     console.error('AI move failed to execute');
                     this.updateGameStatus('AI move failed - continue playing');
@@ -273,7 +268,7 @@ class ChessGameController {
             moveHistoryElement.appendChild(moveElement);
         }
 
-        // Scroll para o último movimento
+        // Scroll to last move
         moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
     }
 
@@ -286,7 +281,7 @@ class ChessGameController {
         capturedWhiteElement.innerHTML = '';
         capturedBlackElement.innerHTML = '';
 
-        // Peças brancas capturadas (mostrar na seção de pretas)
+        // Captured white pieces (show in black section)
         gameState.capturedPieces.white.forEach(piece => {
             const pieceElement = document.createElement('span');
             pieceElement.className = 'captured-piece';
@@ -294,7 +289,7 @@ class ChessGameController {
             capturedBlackElement.appendChild(pieceElement);
         });
 
-        // Peças pretas capturadas (mostrar na seção de brancas)
+        // Captured black pieces (show in white section)
         gameState.capturedPieces.black.forEach(piece => {
             const pieceElement = document.createElement('span');
             pieceElement.className = 'captured-piece';
@@ -354,7 +349,7 @@ class ChessGameController {
         whiteTimer.textContent = this.formatTime(this.timers.white);
         blackTimer.textContent = this.formatTime(this.timers.black);
 
-        // Destacar timer do jogador atual
+        // Highlight current player's timer
         whiteTimer.style.fontWeight = this.game.getCurrentPlayer() === COLORS.WHITE ? 'bold' : 'normal';
         blackTimer.style.fontWeight = this.game.getCurrentPlayer() === COLORS.BLACK ? 'bold' : 'normal';
     }
@@ -425,10 +420,10 @@ class ChessGameController {
     undoMove() {
         if (this.game.getMoveHistory().length === 0) return;
 
-        // No modo IA, desfazer duas jogadas (jogador e IA)
+        // In AI mode, undo two moves (player and AI)
         if (this.gameMode === GAME_MODES.HUMAN_VS_BOT && this.game.getMoveHistory().length >= 2) {
-            this.game.undoMove(); // Desfazer movimento da IA
-            this.game.undoMove(); // Desfazer movimento do jogador
+            this.game.undoMove(); // Undo AI move
+            this.game.undoMove(); // Undo player move
         } else {
             this.game.undoMove();
         }
@@ -462,14 +457,10 @@ class ChessGameController {
     }
 }
 
-// Inicializar o jogo quando a página carregar
+// Initialize game when page loads
 document.addEventListener('DOMContentLoaded', () => {
     const gameController = new ChessGameController();
     
-    // Tornar disponível globalmente para debug
+    // Make globally available for debugging
     window.chessGame = gameController;
-    
-    console.log('🎯 Advanced Chess Game loaded successfully!');
-    console.log('🔧 Use window.chessGame to access the game controller');
-    console.log('⌨️ Shortcuts: Ctrl+R (new game), Ctrl+Z (undo)');
 });

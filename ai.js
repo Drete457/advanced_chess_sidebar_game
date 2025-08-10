@@ -1,10 +1,10 @@
-// IA para o jogo de xadrez
+// AI for chess game
 class ChessAI {
     constructor(difficulty = DIFFICULTIES.MEDIUM) {
         this.difficulty = difficulty;
         this.maxDepth = this.getMaxDepth(difficulty);
         
-        // Valores das peças
+        // Piece values
         this.positionValues = {
             [PIECE_TYPES.PAWN]: 100,
             [PIECE_TYPES.KNIGHT]: 320,
@@ -14,7 +14,7 @@ class ChessAI {
             [PIECE_TYPES.KING]: 20000
         };
 
-        // Tabelas de posição para avaliação mais precisa
+        // Position tables for more accurate evaluation
         this.positionTables = {
             [PIECE_TYPES.PAWN]: [
                 [0,  0,  0,  0,  0,  0,  0,  0],
@@ -88,83 +88,187 @@ class ChessAI {
         }
     }
 
-    // Fazer o melhor movimento usando algoritmo minimax com poda alfa-beta
+    // Make the best move using optimized evaluation algorithm
     getBestMove(game) {
         const gameState = game.getGameState();
         
         if (gameState.gameOver) return null;
 
-        // Versão simplificada para evitar problemas com undoMove
+        // Get all possible moves with optimization
         const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
         if (allMoves.length === 0) return null;
 
         let bestMove = null;
         let bestScore = -Infinity;
 
-        // Avaliar cada movimento possível
+        // Collect and evaluate all moves
+        const moveEvaluations = [];
         for (const { piece, moves } of allMoves) {
             for (const move of moves) {
                 const score = this.evaluateMove(gameState, piece, move);
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMove = [piece.position, move];
-                }
+                moveEvaluations.push({
+                    from: piece.position,
+                    to: move,
+                    score: score,
+                    piece: piece
+                });
             }
         }
 
-        return bestMove;
+        // Sort moves by score (best first) for better performance
+        moveEvaluations.sort((a, b) => b.score - a.score);
+
+        // Select the best move (with some difficulty-based variation)
+        const topMoves = moveEvaluations.slice(0, Math.max(1, Math.floor(moveEvaluations.length * 0.3)));
+        
+        if (this.difficulty === DIFFICULTIES.EASY && topMoves.length > 3) {
+            // Easy mode: sometimes pick from top 3 moves randomly
+            const randomIndex = Math.floor(Math.random() * Math.min(3, topMoves.length));
+            const selectedMove = topMoves[randomIndex];
+            return [selectedMove.from, selectedMove.to];
+        } else {
+            // Medium/Hard: pick the absolute best move
+            const bestEval = moveEvaluations[0];
+            return [bestEval.from, bestEval.to];
+        }
     }
 
-    // Avaliar um movimento específico
+    // Evaluate a specific move with enhanced strategic considerations
     evaluateMove(gameState, piece, move) {
         let score = 0;
 
-        // Captura de peças
+        // Piece capture value
         const targetPiece = gameState.board[move.row][move.col];
         if (targetPiece && targetPiece.color !== piece.color) {
             score += this.positionValues[targetPiece.type];
+            
+            // Bonus for capturing higher value pieces with lower value pieces
+            const valueGain = this.positionValues[targetPiece.type] - this.positionValues[piece.type];
+            if (valueGain > 0) {
+                score += valueGain * 0.5;
+            }
         }
 
-        // Valor posicional
-        score += this.getPositionValue(piece, move.row, move.col);
+        // Positional value improvement
+        const currentPositionValue = this.getPositionValue(piece, piece.position.row, piece.position.col);
+        const newPositionValue = this.getPositionValue(piece, move.row, move.col);
+        score += (newPositionValue - currentPositionValue) * 0.5;
 
-        // Controle do centro
+        // Center control bonus
         if ((move.row === 3 || move.row === 4) && (move.col === 3 || move.col === 4)) {
+            score += 25;
+        }
+
+        // Extended center control
+        if (move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5) {
+            score += 10;
+        }
+
+        // Piece development bonus (for pieces that haven't moved)
+        if ((piece.type === PIECE_TYPES.KNIGHT || piece.type === PIECE_TYPES.BISHOP) && !piece.hasMoved) {
             score += 20;
         }
 
-        // Desenvolvimento de peças
-        if (piece.type === PIECE_TYPES.KNIGHT || piece.type === PIECE_TYPES.BISHOP) {
-            if (!piece.hasMoved) {
+        // Castle early game bonus
+        if (piece.type === PIECE_TYPES.KING && Math.abs(move.col - piece.position.col) === 2) {
+            score += 30; // Castling bonus
+        }
+
+        // King safety considerations
+        if (piece.type === PIECE_TYPES.KING) {
+            // Penalize king moves to center in early/mid game
+            if ((move.row >= 2 && move.row <= 5) && (move.col >= 2 && move.col <= 5)) {
+                score -= 40;
+            }
+            // Bonus for king staying on back rank early
+            if ((piece.color === COLORS.WHITE && move.row === 7) || 
+                (piece.color === COLORS.BLACK && move.row === 0)) {
                 score += 15;
             }
         }
 
-        // Segurança do rei
-        if (piece.type === PIECE_TYPES.KING) {
-            // Penalizar movimento do rei para o centro no início
-            if ((move.row >= 2 && move.row <= 5) && (move.col >= 2 && move.col <= 5)) {
-                score -= 30;
+        // Pawn structure considerations
+        if (piece.type === PIECE_TYPES.PAWN) {
+            // Bonus for pawn advancement
+            const advancement = piece.color === COLORS.WHITE ? (6 - move.row) : (move.row - 1);
+            score += advancement * 5;
+            
+            // Bonus for central pawns
+            if (move.col >= 3 && move.col <= 4) {
+                score += 10;
             }
         }
 
-        // Adicionar aleatoriedade para tornar os jogos mais interessantes
-        score += Math.random() * 10;
+        // Threat and defense evaluation
+        score += this.evaluateThreats(gameState, piece, move);
+
+        // Add controlled randomness based on difficulty
+        const randomFactor = this.difficulty === DIFFICULTIES.EASY ? 20 : 
+                             this.difficulty === DIFFICULTIES.MEDIUM ? 10 : 5;
+        score += (Math.random() - 0.5) * randomFactor;
 
         return score;
+    }
+
+    // Evaluate threats created or defended by a move
+    evaluateThreats(gameState, piece, move) {
+        let score = 0;
+
+        // Simple threat evaluation: check if move attacks enemy pieces
+        const directions = this.getPieceDirections(piece.type);
+        
+        for (const [deltaRow, deltaCol] of directions) {
+            const targetRow = move.row + deltaRow;
+            const targetCol = move.col + deltaCol;
+            
+            if (this.isValidPosition(targetRow, targetCol)) {
+                const targetPiece = gameState.board[targetRow][targetCol];
+                if (targetPiece && targetPiece.color !== piece.color) {
+                    // Bonus for threatening enemy pieces
+                    score += this.positionValues[targetPiece.type] * 0.1;
+                }
+            }
+        }
+
+        return score;
+    }
+
+    // Get movement directions for different piece types
+    getPieceDirections(pieceType) {
+        switch (pieceType) {
+            case PIECE_TYPES.PAWN:
+                return [[-1, -1], [-1, 1], [1, -1], [1, 1]]; // Diagonal attacks only
+            case PIECE_TYPES.ROOK:
+                return [[0, 1], [0, -1], [1, 0], [-1, 0]];
+            case PIECE_TYPES.BISHOP:
+                return [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+            case PIECE_TYPES.QUEEN:
+                return [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+            case PIECE_TYPES.KING:
+                return [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+            case PIECE_TYPES.KNIGHT:
+                return [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+            default:
+                return [];
+        }
+    }
+
+    // Helper method to check if position is valid
+    isValidPosition(row, col) {
+        return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
     evaluatePosition(gameState) {
         let evaluation = 0;
 
-        // Avaliação material e posicional
+        // Material and positional evaluation
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = gameState.board[row][col];
                 if (piece) {
                     let pieceValue = this.positionValues[piece.type];
                     
-                    // Adicionar valor posicional
+                    // Add positional value
                     const positionValue = this.getPositionValue(piece, row, col);
                     pieceValue += positionValue;
                     
@@ -177,19 +281,19 @@ class ChessAI {
             }
         }
 
-        // Bônus por mobilidade
+        // Mobility bonus
         const whiteMoves = this.countMoves(gameState, COLORS.WHITE);
         const blackMoves = this.countMoves(gameState, COLORS.BLACK);
         evaluation += (blackMoves - whiteMoves) * 10;
 
-        // Penalidade por estar em xeque
+        // Check penalty
         if (gameState.inCheck.white) evaluation -= 50;
         if (gameState.inCheck.black) evaluation += 50;
 
-        // Bônus por controle do centro
+        // Center control bonus
         evaluation += this.evaluateCenterControl(gameState);
 
-        // Avaliação de segurança do rei
+        // King safety evaluation
         evaluation += this.evaluateKingSafety(gameState);
 
         return evaluation;
@@ -208,8 +312,8 @@ class ChessAI {
             for (let col = 0; col < 8; col++) {
                 const piece = gameState.board[row][col];
                 if (piece && piece.color === color) {
-                    // Aqui seria necessário calcular os movimentos válidos
-                    // Por simplicidade, vamos usar uma estimativa baseada no tipo da peça
+                    // Here we would need to calculate valid moves
+                    // For simplicity, we'll use an estimate based on piece type
                     moveCount += this.estimateMoveCount(piece.type);
                 }
             }
@@ -255,13 +359,13 @@ class ChessAI {
     evaluateKingSafety(gameState) {
         let evaluation = 0;
 
-        // Simplificado: penalizar rei no centro durante o meio-jogo
+        // Simplified: penalize king in center during mid-game
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = gameState.board[row][col];
                 if (piece && piece.type === PIECE_TYPES.KING) {
                     if (row >= 2 && row <= 5 && col >= 2 && col <= 5) {
-                        // Rei no centro é perigoso
+                        // King in center is dangerous
                         const penalty = 30;
                         if (piece.color === COLORS.BLACK) {
                             evaluation -= penalty;
@@ -276,14 +380,14 @@ class ChessAI {
         return evaluation;
     }
 
-    // Método para fazer um movimento semi-inteligente (para dificuldade fácil)
+    // Method to make a semi-intelligent move (for easy difficulty)
     getRandomMove(game) {
         const gameState = game.getGameState();
         const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
         
         if (allMoves.length === 0) return null;
 
-        // Priorizar capturas mesmo no modo "aleatório"
+        // Prioritize captures even in "random" mode
         const captureMoves = [];
         const normalMoves = [];
 
@@ -298,43 +402,43 @@ class ChessAI {
             }
         }
 
-        // 70% chance de capturar se possível
+        // 70% chance to capture if possible
         if (captureMoves.length > 0 && Math.random() < 0.7) {
             return captureMoves[Math.floor(Math.random() * captureMoves.length)];
         }
 
-        // Senão, movimento normal aleatório
+        // Otherwise, random normal move
         const allPossibleMoves = [...captureMoves, ...normalMoves];
         return allPossibleMoves[Math.floor(Math.random() * allPossibleMoves.length)];
     }
 
-    // Método principal para obter movimento da IA
+    // Main method to get AI move
     async getAIMove(game) {
-        // Simular tempo de "pensamento"
+        // Simulate "thinking" time
         await new Promise(resolve => {
             const thinkingTime = this.difficulty === DIFFICULTIES.EASY ? 300 : 
                                this.difficulty === DIFFICULTIES.MEDIUM ? 800 : 1200;
             setTimeout(resolve, thinkingTime);
         });
 
-        // Estratégias diferentes baseadas na dificuldade
+        // Different strategies based on difficulty
         switch (this.difficulty) {
             case DIFFICULTIES.EASY:
-                // 60% chance de movimento aleatório, 40% melhor movimento
+                // 60% chance of random move, 40% best move
                 if (Math.random() < 0.6) {
                     return this.getRandomMove(game);
                 }
                 return this.getBestMove(game);
 
             case DIFFICULTIES.MEDIUM:
-                // 20% chance de movimento aleatório, 80% melhor movimento
+                // 20% chance of random move, 80% best move
                 if (Math.random() < 0.2) {
                     return this.getRandomMove(game);
                 }
                 return this.getBestMove(game);
 
             case DIFFICULTIES.HARD:
-                // Sempre o melhor movimento
+                // Always best move
                 return this.getBestMove(game);
 
             default:
@@ -342,7 +446,7 @@ class ChessAI {
         }
     }
 
-    // Alterar dificuldade
+    // Change difficulty
     setDifficulty(difficulty) {
         this.difficulty = difficulty;
         this.maxDepth = this.getMaxDepth(difficulty);
@@ -352,15 +456,15 @@ class ChessAI {
         return this.difficulty;
     }
 
-    // Sugerir movimento para o jogador humano
+    // Suggest move for human player
     suggestMove(game) {
-        // Usar algoritmo mais simples para sugestão
+        // Use simpler algorithm for suggestions
         const gameState = game.getGameState();
         const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
         
         if (allMoves.length === 0) return null;
 
-        // Priorizar capturas
+        // Prioritize captures
         for (const { piece, moves } of allMoves) {
             for (const move of moves) {
                 const targetPiece = gameState.board[move.row][move.col];
@@ -370,7 +474,7 @@ class ChessAI {
             }
         }
 
-        // Se não há capturas, usar minimax com profundidade 2
+        // If no captures, use minimax with depth 2
         const originalDepth = this.maxDepth;
         this.maxDepth = 2;
         const result = this.getBestMove(game);

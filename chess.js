@@ -1,4 +1,4 @@
-// Enumerações e constantes para o jogo de xadrez
+// Enumerations and constants for the chess game
 const PIECE_TYPES = {
     KING: 'king',
     QUEEN: 'queen',
@@ -24,7 +24,7 @@ const DIFFICULTIES = {
     HARD: 'hard'
 };
 
-// Classe para representar uma peça
+// Class to represent a chess piece
 class Piece {
     constructor(type, color, position) {
         this.type = type;
@@ -33,7 +33,7 @@ class Piece {
         this.position = position;
     }
 
-    // Símbolos Unicode para as peças
+    // Unicode symbols for chess pieces
     getSymbol() {
         const symbols = {
             white: {
@@ -55,7 +55,7 @@ class Piece {
     }
 }
 
-// Classe principal do jogo de xadrez
+// Main chess game class
 class ChessGame {
     constructor() {
         this.board = this.createInitialBoard();
@@ -77,7 +77,7 @@ class ChessGame {
     createInitialBoard() {
         const board = Array(8).fill(null).map(() => Array(8).fill(null));
 
-        // Peças pretas
+        // Black pieces
         const backRankBlack = [PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN, 
                               PIECE_TYPES.KING, PIECE_TYPES.BISHOP, PIECE_TYPES.KNIGHT, PIECE_TYPES.ROOK];
         for (let col = 0; col < 8; col++) {
@@ -85,7 +85,7 @@ class ChessGame {
             board[1][col] = new Piece(PIECE_TYPES.PAWN, COLORS.BLACK, { row: 1, col });
         }
 
-        // Peças brancas
+        // White pieces
         const backRankWhite = [PIECE_TYPES.ROOK, PIECE_TYPES.KNIGHT, PIECE_TYPES.BISHOP, PIECE_TYPES.QUEEN, 
                               PIECE_TYPES.KING, PIECE_TYPES.BISHOP, PIECE_TYPES.KNIGHT, PIECE_TYPES.ROOK];
         for (let col = 0; col < 8; col++) {
@@ -96,7 +96,7 @@ class ChessGame {
         return board;
     }
 
-    // Obter o estado atual do jogo
+    // Get current game state
     getGameState() {
         return {
             board: this.board.map(row => row.map(piece => piece?.clone() || null)),
@@ -114,11 +114,11 @@ class ChessGame {
         };
     }
 
-    // Selecionar uma casa do tabuleiro
+    // Select a square on the board
     selectSquare(row, col) {
         const piece = this.board[row][col];
 
-        // Se não há peça selecionada
+        // If no piece is selected
         if (!this.selectedSquare) {
             if (piece && piece.color === this.currentPlayer) {
                 this.selectedSquare = { row, col };
@@ -128,14 +128,14 @@ class ChessGame {
             return { selected: null, validMoves: [] };
         }
 
-        // Se clicou na mesma casa, deseleciona
+        // If clicked on the same square, deselect
         if (this.selectedSquare.row === row && this.selectedSquare.col === col) {
             this.selectedSquare = undefined;
             this.validMoves = [];
             return { selected: null, validMoves: [] };
         }
 
-        // Verificar se é um movimento válido
+        // Check if it's a valid move
         const isValidMove = this.validMoves.some(move => move.row === row && move.col === col);
         if (isValidMove) {
             this.makeMove(this.selectedSquare, { row, col });
@@ -144,20 +144,20 @@ class ChessGame {
             return { selected: null, validMoves: [] };
         }
 
-        // Selecionar nova peça se for do jogador atual
+        // Select new piece if it belongs to current player
         if (piece && piece.color === this.currentPlayer) {
             this.selectedSquare = { row, col };
             this.validMoves = this.getValidMoves(piece);
             return { selected: this.selectedSquare, validMoves: this.validMoves };
         }
 
-        // Deselecionar se clicou em casa inválida
+        // Deselect if clicked on invalid square
         this.selectedSquare = undefined;
         this.validMoves = [];
         return { selected: null, validMoves: [] };
     }
 
-    // Fazer um movimento
+    // Make a move
     makeMove(from, to, promotionPiece) {
         const piece = this.board[from.row][from.col];
         if (!piece) return false;
@@ -166,7 +166,7 @@ class ChessGame {
         let isEnPassant = false;
         let isCastling = false;
 
-        // Verificar en passant
+        // Check en passant
         if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget && 
             to.row === this.enPassantTarget.row && to.col === this.enPassantTarget.col) {
             isEnPassant = true;
@@ -178,7 +178,7 @@ class ChessGame {
             }
         }
 
-        // Verificar roque
+        // Check castling
         if (piece.type === PIECE_TYPES.KING && Math.abs(to.col - from.col) === 2) {
             isCastling = true;
             const rookFromCol = to.col > from.col ? 7 : 0;
@@ -192,30 +192,30 @@ class ChessGame {
             }
         }
 
-        // Mover a peça
+        // Move the piece
         this.board[to.row][to.col] = piece;
         this.board[from.row][from.col] = null;
         piece.position = to;
         piece.hasMoved = true;
 
-        // Capturar peça se houver
+        // Capture piece if present
         if (capturedPiece && !isEnPassant) {
             this.capturedPieces[capturedPiece.color].push(capturedPiece);
         }
 
-        // Promoção de peão
+        // Pawn promotion
         if (piece.type === PIECE_TYPES.PAWN && (to.row === 0 || to.row === 7)) {
             if (promotionPiece) {
                 piece.type = promotionPiece;
             } else {
-                piece.type = PIECE_TYPES.QUEEN; // Promoção automática para rainha se não especificado
+                piece.type = PIECE_TYPES.QUEEN; // Auto-promote to queen if not specified
             }
         }
 
-        // Atualizar direitos de roque
+        // Update castling rights
         this.updateCastlingRights(piece, from);
 
-        // Definir alvo en passant
+        // Set en passant target
         this.enPassantTarget = undefined;
         if (piece.type === PIECE_TYPES.PAWN && Math.abs(to.row - from.row) === 2) {
             this.enPassantTarget = {
@@ -224,7 +224,7 @@ class ChessGame {
             };
         }
 
-        // Criar objeto do movimento
+        // Create move object
         const move = {
             from,
             to,
@@ -238,17 +238,17 @@ class ChessGame {
 
         this.moveHistory.push(move);
 
-        // Trocar jogador
+        // Switch player
         this.currentPlayer = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
 
-        // Verificar xeque e xeque-mate
+        // Check for check and checkmate
         this.updateCheckStatus();
         this.checkGameEnd();
 
         return true;
     }
 
-    // Obter movimentos válidos para uma peça
+    // Get valid moves for a piece
     getValidMoves(piece) {
         const moves = [];
 
@@ -273,7 +273,7 @@ class ChessGame {
                 break;
         }
 
-        // Filtrar movimentos que deixariam o rei em xeque
+        // Filter moves that would leave the king in check
         return moves.filter(move => !this.wouldBeInCheck(piece.position, move));
     }
 
@@ -283,12 +283,12 @@ class ChessGame {
         const direction = piece.color === COLORS.WHITE ? -1 : 1;
         const startRow = piece.color === COLORS.WHITE ? 6 : 1;
 
-        // Movimento para frente
+        // Forward movement
         const frontRow = row + direction;
         if (this.isValidPosition(frontRow, col) && !this.board[frontRow][col]) {
             moves.push({ row: frontRow, col });
 
-            // Movimento duplo inicial
+            // Initial double movement
             if (row === startRow) {
                 const doubleFrontRow = row + 2 * direction;
                 if (this.isValidPosition(doubleFrontRow, col) && !this.board[doubleFrontRow][col]) {
@@ -297,7 +297,7 @@ class ChessGame {
             }
         }
 
-        // Capturas diagonais
+        // Diagonal captures
         for (const deltaCol of [-1, 1]) {
             const captureRow = row + direction;
             const captureCol = col + deltaCol;
@@ -350,7 +350,7 @@ class ChessGame {
         const moves = [];
         const { row, col } = piece.position;
 
-        // Movimentos normais do rei
+        // Normal king movements
         for (let deltaRow = -1; deltaRow <= 1; deltaRow++) {
             for (let deltaCol = -1; deltaCol <= 1; deltaCol++) {
                 if (deltaRow === 0 && deltaCol === 0) continue;
@@ -367,9 +367,9 @@ class ChessGame {
             }
         }
 
-        // Roque
+        // Castling
         if (!piece.hasMoved && !this.inCheck[piece.color]) {
-            // Roque do lado do rei
+            // Kingside castling
             if (this.castlingRights[piece.color].kingside) {
                 if (!this.board[row][col + 1] && !this.board[row][col + 2]) {
                     const rook = this.board[row][7];
@@ -379,7 +379,7 @@ class ChessGame {
                 }
             }
 
-            // Roque do lado da rainha
+            // Queenside castling
             if (this.castlingRights[piece.color].queenside) {
                 if (!this.board[row][col - 1] && !this.board[row][col - 2] && !this.board[row][col - 3]) {
                     const rook = this.board[row][0];
@@ -444,33 +444,32 @@ class ChessGame {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
-    // Verificar se o movimento deixaria o rei em xeque
     wouldBeInCheck(from, to) {
-        // Fazer movimento temporário
+        // Make temporary move
         const piece = this.board[from.row][from.col];
         const capturedPiece = this.board[to.row][to.col];
         
         this.board[to.row][to.col] = piece;
         this.board[from.row][from.col] = null;
 
-        // Verificar se o rei está em xeque
+        // Check if king is in check
         const inCheck = this.isKingInCheck(piece.color);
 
-        // Desfazer movimento
+        // Undo move
         this.board[from.row][from.col] = piece;
         this.board[to.row][to.col] = capturedPiece;
 
         return inCheck;
     }
 
-    // Verificar se o rei está em xeque
+    // Check if the king is in check
     isKingInCheck(color) {
         const kingPosition = this.findKing(color);
         if (!kingPosition) return false;
 
         const opponentColor = color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
 
-        // Verificar ataques de todas as peças oponentes
+        // Check attacks from all opponent pieces
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = this.board[row][col];
@@ -499,7 +498,7 @@ class ChessGame {
     }
 
     getPieceAttacks(piece) {
-        // Similar aos movimentos, mas sem filtrar por xeque
+        // Similar to movements, but without filtering for check
         switch (piece.type) {
             case PIECE_TYPES.PAWN:
                 return this.getPawnAttacks(piece);
@@ -555,13 +554,13 @@ class ChessGame {
     }
 
     updateCastlingRights(piece, from) {
-        // Se o rei se moveu
+        // If the king moved
         if (piece.type === PIECE_TYPES.KING) {
             this.castlingRights[piece.color].kingside = false;
             this.castlingRights[piece.color].queenside = false;
         }
 
-        // Se uma torre se moveu
+        // If a rook moved
         if (piece.type === PIECE_TYPES.ROOK) {
             if (from.col === 0) {
                 this.castlingRights[piece.color].queenside = false;
@@ -581,17 +580,17 @@ class ChessGame {
 
         if (!hasValidMoves) {
             if (this.inCheck[this.currentPlayer]) {
-                // Xeque-mate
+                // Checkmate
                 this.gameOver = true;
                 this.winner = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
             } else {
-                // Empate por afogamento
+                // Stalemate draw
                 this.gameOver = true;
                 this.winner = 'draw';
             }
         }
 
-        // Verificar outras condições de empate
+        // Check other draw conditions
         if (this.isDrawByInsufficientMaterial() || this.isDrawByRepetition()) {
             this.gameOver = true;
             this.winner = 'draw';
@@ -622,10 +621,10 @@ class ChessGame {
             }
         }
 
-        // Rei vs Rei
+        // King vs King
         if (pieces.length === 2) return true;
 
-        // Rei e Bispo vs Rei ou Rei e Cavalo vs Rei
+        // King and Bishop vs King or King and Knight vs King
         if (pieces.length === 3) {
             const nonKingPieces = pieces.filter(p => p.type !== PIECE_TYPES.KING);
             return nonKingPieces.length === 1 && 
@@ -636,7 +635,7 @@ class ChessGame {
     }
 
     isDrawByRepetition() {
-        // Implementação simplificada - na prática seria mais complexa
+        // Simplified implementation - in practice would be more complex
         return false;
     }
 
@@ -650,25 +649,25 @@ class ChessGame {
 
         let notation = '';
 
-        // Tipo da peça (exceto peão)
+        // Piece type (except pawn)
         if (piece.type !== PIECE_TYPES.PAWN) {
             notation += piece.type.charAt(0).toUpperCase();
         }
 
-        // Casa de origem (apenas se necessário para desambiguação)
+        // Origin square (only if necessary for disambiguation)
         notation += files[from.col];
         if (piece.type === PIECE_TYPES.PAWN && capturedPiece) {
-            // Para peões que capturam, sempre incluir a coluna de origem
+            // For capturing pawns, always include origin column
         } else if (piece.type !== PIECE_TYPES.PAWN) {
             notation += ranks[from.row];
         }
 
-        // Captura
+        // Capture
         if (capturedPiece || isEnPassant) {
             notation += 'x';
         }
 
-        // Casa de destino
+        // Destination square
         notation += files[to.col] + ranks[to.row];
 
         // En passant
@@ -679,26 +678,26 @@ class ChessGame {
         return notation;
     }
 
-    // Desfazer último movimento
+    // Undo last move
     undoMove() {
         if (this.moveHistory.length === 0) return false;
 
         const lastMove = this.moveHistory.pop();
         const { from, to, piece, capturedPiece, isEnPassant, isCastling } = lastMove;
 
-        // Restaurar a peça na posição original
+        // Restore piece to original position
         this.board[from.row][from.col] = piece;
         this.board[to.row][to.col] = capturedPiece || null;
         piece.position = from;
 
-        // Desfazer en passant
+        // Undo en passant
         if (isEnPassant && capturedPiece) {
             const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
             this.board[capturedPawnRow][to.col] = capturedPiece;
             this.capturedPieces[capturedPiece.color].pop();
         }
 
-        // Desfazer roque
+        // Undo castling
         if (isCastling) {
             const rookToCol = to.col > from.col ? 7 : 0;
             const rookFromCol = to.col > from.col ? to.col - 1 : to.col + 1;
@@ -710,15 +709,15 @@ class ChessGame {
             }
         }
 
-        // Remover peça capturada das peças capturadas
+        // Remove captured piece from captured pieces list
         if (capturedPiece && !isEnPassant) {
             this.capturedPieces[capturedPiece.color].pop();
         }
 
-        // Trocar jogador
+        // Switch player
         this.currentPlayer = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
 
-        // Resetar estado do jogo
+        // Reset game state
         this.gameOver = false;
         this.winner = undefined;
         this.updateCheckStatus();
@@ -726,7 +725,7 @@ class ChessGame {
         return true;
     }
 
-    // Resetar jogo
+    // Reset game
     resetGame() {
         this.board = this.createInitialBoard();
         this.currentPlayer = COLORS.WHITE;
@@ -744,43 +743,43 @@ class ChessGame {
         this.enPassantTarget = undefined;
     }
 
-    // Verificar se é final de jogo
+    // Check if game is over
     isGameOver() {
         return this.gameOver;
     }
 
-    // Obter vencedor
+    // Get winner
     getWinner() {
         return this.winner;
     }
 
-    // Obter jogador atual
+    // Get current player
     getCurrentPlayer() {
         return this.currentPlayer;
     }
 
-    // Obter histórico de movimentos
+    // Get move history
     getMoveHistory() {
         return [...this.moveHistory];
     }
 
-    // Obter posição do quadrado selecionado
+    // Get selected square position
     getSelectedSquare() {
         return this.selectedSquare ? { ...this.selectedSquare } : undefined;
     }
 
-    // Obter movimentos válidos atuais
+    // Get current valid moves
     getValidMovesForSelected() {
         return [...this.validMoves];
     }
 
-    // Verificar se está em xeque
+    // Check if in check
     isInCheck(color) {
         const checkColor = color || this.currentPlayer;
         return this.inCheck[checkColor];
     }
 
-    // Obter todas as peças de uma cor
+    // Get all pieces of a color
     getPiecesByColor(color) {
         const pieces = [];
         for (let row = 0; row < 8; row++) {
@@ -794,7 +793,7 @@ class ChessGame {
         return pieces;
     }
 
-    // Obter todos os movimentos possíveis para uma cor
+    // Get all possible moves for a color
     getAllPossibleMoves(color) {
         const allMoves = [];
         const pieces = this.getPiecesByColor(color);
