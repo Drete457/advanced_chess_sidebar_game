@@ -282,11 +282,33 @@ class ChessGameController {
             const moveNumber = Math.floor(i / 2) + 1;
             const isWhite = i % 2 === 0;
             
+            // Create player indicator
+            const playerIndicator = document.createElement('span');
+            playerIndicator.className = 'player-indicator';
+            
             if (isWhite) {
-                moveElement.textContent = `${moveNumber}. ${move.notation}`;
+                playerIndicator.textContent = '♔';
+                playerIndicator.classList.add('white-player');
+                moveElement.classList.add('white-move');
             } else {
-                moveElement.textContent = `${moveNumber}... ${move.notation}`;
+                playerIndicator.textContent = '♚';
+                playerIndicator.classList.add('black-player');
+                moveElement.classList.add('black-move');
             }
+            
+            // Create move text
+            const moveText = document.createElement('span');
+            moveText.className = 'move-text';
+            
+            if (isWhite) {
+                moveText.textContent = `${moveNumber}. ${move.notation}`;
+            } else {
+                moveText.textContent = `${moveNumber}... ${move.notation}`;
+            }
+
+            // Assemble the move element
+            moveElement.appendChild(playerIndicator);
+            moveElement.appendChild(moveText);
 
             if (i === moveHistory.length - 1) {
                 moveElement.classList.add('current');
@@ -295,8 +317,26 @@ class ChessGameController {
             moveHistoryElement.appendChild(moveElement);
         }
 
-        // Scroll to last move
-        moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
+        // Multiple approaches to ensure scroll to bottom works reliably
+        requestAnimationFrame(() => {
+            // Primary approach: scroll to bottom
+            moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
+            
+            // Fallback: scroll last element into view
+            const lastMove = moveHistoryElement.lastElementChild;
+            if (lastMove) {
+                lastMove.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'end',
+                    inline: 'nearest'
+                });
+            }
+            
+            // Extra fallback after a small delay
+            setTimeout(() => {
+                moveHistoryElement.scrollTop = moveHistoryElement.scrollHeight;
+            }, 100);
+        });
     }
 
     updateCapturedPieces() {

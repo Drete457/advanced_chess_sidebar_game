@@ -262,19 +262,29 @@ main {
     z-index: 1000;
 }
 
-/* Coordenadas */
+/* Coordinates */
 .coordinates {
     margin-top: 0.5rem;
     position: relative;
-    width: 656px; /* 8 * 80 + 2 * 4 para as bordas */
+    width: 656px; /* 8 * 80 + 2 * 4 for borders */
 }
 
 .files {
     display: flex;
     justify-content: space-around;
     font-weight: bold;
-    color: #2c3e50;
+    color: #ffffff;
+    font-size: 1.2rem;
     margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 2px;
+}
+
+.files span {
+    padding: 0.25rem 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    backdrop-filter: blur(5px);
 }
 
 .ranks {
@@ -286,30 +296,67 @@ main {
     justify-content: space-around;
     height: 640px; /* 8 * 80 */
     font-weight: bold;
-    color: #2c3e50;
+    color: #ffffff;
+    font-size: 1.2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-/* Histórico de movimentos */
+.ranks span {
+    padding: 0.25rem 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    backdrop-filter: blur(5px);
+    text-align: center;
+    min-width: 1.5rem;
+}
+
+/* Move history */
 .move-history {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border-radius: 15px;
     padding: 1.5rem;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    max-height: 500px;
-    overflow-y: auto;
+    height: 500px; /* Fixed height instead of max-height */
+    display: flex;
+    flex-direction: column;
 }
 
 .move-history h3 {
     margin-bottom: 1rem;
+    margin-top: 0;
     text-align: center;
     color: #2c3e50;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .moves-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex: 1; /* Take remaining space */
+    overflow-y: auto;
+    padding-right: 8px; /* Space for scrollbar */
+    min-height: 0; /* Allow shrinking */
+}
+
+/* Custom scrollbar for move history */
+.moves-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.moves-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.moves-list::-webkit-scrollbar-thumb {
+    background: #007bff;
+    border-radius: 3px;
+}
+
+.moves-list::-webkit-scrollbar-thumb:hover {
+    background: #0056b3;
 }
 
 .move-item {
@@ -318,6 +365,9 @@ main {
     border-radius: 8px;
     border-left: 4px solid #007bff;
     transition: background 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .move-item:hover {
@@ -327,6 +377,56 @@ main {
 .move-item.current {
     background: #fff3cd;
     border-left-color: #ffc107;
+}
+
+/* Player indicators */
+.player-indicator {
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50%;
+    min-width: 2rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.player-indicator.white-player {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    color: #2c3e50;
+    border: 2px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.player-indicator.black-player {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: #ffffff;
+    border: 2px solid #2c3e50;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.move-text {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+/* Different border colors for white and black moves */
+.move-item.white-move {
+    border-left-color: #6c757d;
+}
+
+.move-item.black-move {
+    border-left-color: #2c3e50;
+}
+
+.move-item.white-move.current {
+    background: #f8f9fa;
+    border-left-color: #28a745;
+}
+
+.move-item.black-move.current {
+    background: #e9ecef;
+    border-left-color: #28a745;
 }
 
 /* Painel de status */
@@ -501,9 +601,14 @@ main {
         width: 496px; /* 8 * 60 + 2 * 4 */
     }
     
+    .files {
+        font-size: 1rem;
+    }
+    
     .ranks {
         height: 480px; /* 8 * 60 */
         top: -60px;
+        font-size: 1rem;
     }
 }
 
@@ -523,9 +628,14 @@ main {
         width: 372px; /* 8 * 45 + 2 * 4 */
     }
     
+    .files {
+        font-size: 0.9rem;
+    }
+    
     .ranks {
         height: 360px; /* 8 * 45 */
         top: -45px;
+        font-size: 0.9rem;
     }
     
     .modal-content {
