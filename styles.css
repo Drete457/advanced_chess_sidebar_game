@@ -266,7 +266,7 @@ main {
 .coordinates {
     margin-top: 0.5rem;
     position: relative;
-    width: 656px; /* 8 * 80 + 2 * 4 for borders */
+    width: 656px; 
 }
 
 .files {
@@ -294,8 +294,8 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 640px; /* Full board height */
-    padding: 40px 0; /* Add padding to center numbers in squares */
+    height: 640px; 
+    padding: 40px 0; 
     box-sizing: border-box;
     font-weight: bold;
     color: #ffffff;
@@ -319,7 +319,7 @@ main {
     border-radius: 15px;
     padding: 1.5rem;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    height: 500px; /* Fixed height instead of max-height */
+    height: 500px; 
     display: flex;
     flex-direction: column;
 }
@@ -329,17 +329,17 @@ main {
     margin-top: 0;
     text-align: center;
     color: #2c3e50;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0; 
 }
 
 .moves-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    flex: 1; /* Take remaining space */
+    flex: 1; 
     overflow-y: auto;
-    padding-right: 8px; /* Space for scrollbar */
-    min-height: 0; /* Allow shrinking */
+    padding-right: 8px; 
+    min-height: 0;
 }
 
 /* Custom scrollbar for move history */
@@ -600,7 +600,7 @@ main {
     }
     
     .coordinates {
-        width: 496px; /* 8 * 60 + 2 * 4 */
+        width: 496px; 
     }
     
     .files {
@@ -608,7 +608,7 @@ main {
     }
     
     .ranks {
-        height: 480px; /* 8 * 60 */
+        height: 480px; 
         top: -60px;
         font-size: 1rem;
     }
@@ -627,7 +627,7 @@ main {
     }
     
     .coordinates {
-        width: 372px; /* 8 * 45 + 2 * 4 */
+        width: 372px; 
     }
     
     .files {
@@ -635,7 +635,7 @@ main {
     }
     
     .ranks {
-        height: 360px; /* 8 * 45 */
+        height: 360px; 
         top: -45px;
         font-size: 0.9rem;
     }
