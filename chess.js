@@ -2,9 +2,9 @@
 const PIECE_TYPES = {
     KING: 'king',
     QUEEN: 'queen',
-    ROOK: 'rook',
+    ROOK: 'tower',
     BISHOP: 'bishop',
-    KNIGHT: 'knight',
+    KNIGHT: 'horse',
     PAWN: 'pawn'
 };
 
@@ -37,12 +37,12 @@ class Piece {
     getSymbol() {
         const symbols = {
             white: {
-                king: '♔', queen: '♕', rook: '♖',
-                bishop: '♗', knight: '♘', pawn: '♙'
+                king: '♔', queen: '♕', tower: '♖',
+                bishop: '♗', horse: '♘', pawn: '♙'
             },
             black: {
-                king: '♚', queen: '♛', rook: '♜',
-                bishop: '♝', knight: '♞', pawn: '♟'
+                king: '♚', queen: '♛', tower: '♜',
+                bishop: '♝', horse: '♞', pawn: '♟'
             }
         };
         return symbols[this.color][this.type];
@@ -664,10 +664,6 @@ class ChessGame {
     }
 
     generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling) {
-        if (isCastling) {
-            return to.col > from.col ? 'O-O' : 'O-O-O';
-        }
-
         const files = 'abcdefgh';
         const ranks = '87654321';
 
@@ -679,11 +675,21 @@ class ChessGame {
 
         // Add piece type prefix for clarity (except pawns)
         if (piece.type !== PIECE_TYPES.PAWN) {
-            notation = piece.type.charAt(0).toUpperCase() + ': ' + notation;
+            let pieceSymbol = '';
+            switch(piece.type) {
+                case PIECE_TYPES.KING: pieceSymbol = 'K'; break;
+                case PIECE_TYPES.QUEEN: pieceSymbol = 'Q'; break;
+                case PIECE_TYPES.ROOK: pieceSymbol = 'T'; break; // Tower
+                case PIECE_TYPES.BISHOP: pieceSymbol = 'B'; break;
+                case PIECE_TYPES.KNIGHT: pieceSymbol = 'H'; break; // Horse
+            }
+            notation = pieceSymbol + ': ' + notation;
         }
 
-        // Add capture indicator
-        if (capturedPiece || isEnPassant) {
+        // Add special indicators
+        if (isCastling) {
+            notation += ' (Castling)';
+        } else if (capturedPiece || isEnPassant) {
             notation += ' (x)';
         }
 
