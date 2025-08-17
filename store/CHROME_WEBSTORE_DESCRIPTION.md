@@ -1,6 +1,3 @@
-# Advanced Chess - Sidebar Game
-## Chrome Web Store Description
-
 ### 📝 Title
 Advanced Chess - Sidebar Game
 
@@ -70,17 +67,8 @@ No complicated setup, no registration, no complications. Just pure, quality ches
 
 Install now and discover why we're the #1 choice for chess in Chrome!
 
-### 📝 Tags/Keywords
-chess, game, sidebar, artificial intelligence, AI, strategy, board, offline, privacy, free
-
-### 📝 Category
-Games
-
 ### 📝 Supported Languages
 • English (Primary)
-• Portuguese (Brazil)
-• Portuguese (Portugal) 
-• Universally understandable interface (Unicode symbols)
 
 ### 📝 Screenshots (Suggestions)
 1. **Main Screen** - Complete board in sidebar with game in progress
@@ -89,9 +77,6 @@ Games
 4. **Move History** - Side panel with complete move list
 5. **Pawn Promotion** - Piece selection modal during promotion
 6. **Timer and Information** - Panel with timer, captured pieces and status
-
-### 📝 Extension Icon
-Clean logo with white king on blue gradient background, golden border, optimized for different sizes (16px, 32px, 48px, 128px).
 
 ### 📝 Target Audience
 • Age: 8+ (appropriate for all ages)
