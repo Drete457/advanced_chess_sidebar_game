@@ -11,6 +11,8 @@ body {
     color: #333;
     min-height: 100vh;
     overflow-x: auto;
+    min-width: 900px;
+    width: 100%;
 }
 
 #app {
@@ -23,16 +25,16 @@ body {
 header {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-    padding: 1rem 2rem;
+    padding: 0.75rem 1rem;
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     border-bottom: 3px solid #f0d000;
 }
 
 header h1 {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     color: #2c3e50;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -45,10 +47,10 @@ header h1 {
 
 .game-controls select,
 .game-controls button {
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     border: none;
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -79,18 +81,18 @@ header h1 {
 /* Main content */
 main {
     flex: 1;
-    padding: 2rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
 }
 
 .game-container {
     display: grid;
-    grid-template-columns: 0.4fr auto 0.4fr; 
-    gap: 2rem;
+    grid-template-columns: 0.35fr auto 0.35fr; 
+    gap: 1rem;
     align-items: start;
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
     width: 100%;
 }
@@ -100,22 +102,22 @@ main {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border-radius: 15px;
-    padding: 1.5rem;
+    padding: 1rem;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .current-player h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
     text-align: center;
 }
 
 .timer {
     text-align: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
     color: #e74c3c;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .captured-pieces h4 {
@@ -152,8 +154,8 @@ main {
 
 .chess-board {
     display: grid;
-    grid-template-columns: repeat(8, 80px);
-    grid-template-rows: repeat(8, 80px);
+    grid-template-columns: repeat(8, 65px);
+    grid-template-rows: repeat(8, 65px);
     border: 4px solid #8B4513;
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -162,12 +164,12 @@ main {
 }
 
 .square {
-    width: 80px;
-    height: 80px;
+    width: 65px;
+    height: 65px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: 2.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -266,7 +268,7 @@ main {
 .coordinates {
     margin-top: 0.5rem;
     position: relative;
-    width: 640px; 
+    width: 520px; 
 }
 
 .files {
@@ -274,7 +276,7 @@ main {
     justify-content: space-around;
     font-weight: bold;
     color: #ffffff;
-    font-size: 1.6rem; 
+    font-size: 1.2rem; 
     margin-bottom: 0.5rem;
     margin-top: 0.5rem;
     text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.7); 
@@ -292,10 +294,10 @@ main {
     top: 0;
     display: flex;
     flex-direction: column;
-    height: 640px; 
+    height: 520px; 
     font-weight: bold;
     color: #ffffff;
-    font-size: 1.6rem; 
+    font-size: 1.2rem; 
     text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.7); 
 }
 
@@ -303,7 +305,7 @@ main {
     padding: 0.25rem 0.5rem;
     text-align: center;
     min-width: 1.5rem;
-    height: 80px; 
+    height: 65px; 
     display: flex;
     align-items: center;
     justify-content: center;
@@ -314,19 +316,20 @@ main {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border-radius: 15px;
-    padding: 1.5rem;
+    padding: 1rem;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    height: 500px; 
+    height: 400px; 
     display: flex;
     flex-direction: column;
 }
 
 .move-history h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     margin-top: 0;
     text-align: center;
     color: #2c3e50;
     flex-shrink: 0; 
+    font-size: 1.1rem;
 }
 
 .moves-list {
@@ -359,14 +362,15 @@ main {
 }
 
 .move-item {
-    padding: 0.75rem;
+    padding: 0.5rem;
     background: #f8f9fa;
     border-radius: 8px;
     border-left: 4px solid #007bff;
     transition: background 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    font-size: 0.9rem;
 }
 
 .move-item:hover {
@@ -380,11 +384,11 @@ main {
 
 /* Player indicators */
 .player-indicator {
-    font-size: 1.2em;
+    font-size: 1rem;
     font-weight: bold;
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.4rem;
     border-radius: 50%;
-    min-width: 2rem;
+    min-width: 1.8rem;
     text-align: center;
     flex-shrink: 0;
 }
@@ -433,28 +437,29 @@ main {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     border-radius: 15px;
-    padding: 1.5rem;
+    padding: 1rem;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
     width: 100%;
 }
 
 .game-status {
     text-align: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
-    margin-bottom: 1rem;
-    padding: 1rem;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
     border-radius: 8px;
     background: #e3f2fd;
     color: #1976d2;
 }
 
 .move-hints h4 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: #2c3e50;
     text-align: center;
+    font-size: 1rem;
 }
 
 .possible-moves {
@@ -554,77 +559,111 @@ main {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Responsiveness */
-@media (max-width: 1200px) {
+/* Responsiveness for sidebar */
+@media (max-width: 1000px) {
     .game-container {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto;
         text-align: center;
+        gap: 0.75rem;
     }
     
     .chess-board {
         justify-self: center;
+        grid-template-columns: repeat(8, 55px);
+        grid-template-rows: repeat(8, 55px);
+    }
+    
+    .square {
+        width: 55px;
+        height: 55px;
+        font-size: 2.2rem;
+    }
+    
+    .coordinates {
+        width: 440px;
+    }
+    
+    .ranks {
+        height: 440px;
+    }
+    
+    .ranks span {
+        height: 55px;
     }
 }
 
 @media (max-width: 768px) {
     header {
-        padding: 1rem;
+        padding: 0.5rem;
     }
     
     header h1 {
-        font-size: 2rem;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
     }
     
     .game-controls {
         flex-direction: column;
         align-items: center;
+        gap: 0.5rem;
     }
     
     main {
-        padding: 1rem;
+        padding: 0.75rem;
     }
     
     .chess-board {
-        grid-template-columns: repeat(8, 60px);
-        grid-template-rows: repeat(8, 60px);
+        grid-template-columns: repeat(8, 50px);
+        grid-template-rows: repeat(8, 50px);
     }
     
     .square {
-        width: 60px;
-        height: 60px;
-        font-size: 2.5rem;
-    }
-    
-    .coordinates {
-        width: 480px; 
-    }
-    
-    .files {
-        font-size: 1rem;
-    }
-    
-    .ranks {
-        height: 480px; 
-        top: -60px;
-        font-size: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .chess-board {
-        grid-template-columns: repeat(8, 45px);
-        grid-template-rows: repeat(8, 45px);
-    }
-    
-    .square {
-        width: 45px;
-        height: 45px;
+        width: 50px;
+        height: 50px;
         font-size: 2rem;
     }
     
     .coordinates {
-        width: 360px;
+        width: 400px; 
+    }
+    
+    .files {
+        font-size: 1rem;
+    }
+    
+    .ranks {
+        height: 400px; 
+        font-size: 1rem;
+    }
+    
+    .ranks span {
+        height: 50px;
+    }
+    
+    .move-history {
+        height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        min-width: 450px;
+    }
+    
+    .chess-board {
+        grid-template-columns: repeat(8, 40px);
+        grid-template-rows: repeat(8, 40px);
+    }
+    
+    .square {
+        width: 40px;
+        height: 40px;
+        font-size: 1.8rem;
+    }
+    
+    .coordinates {
+        width: 320px;
     }
     
     .files {
@@ -632,18 +671,25 @@ main {
     }
     
     .ranks {
-        height: 360px; 
-        top: -45px;
+        height: 320px; 
         font-size: 0.9rem;
     }
     
+    .ranks span {
+        height: 40px;
+    }
+    
     .modal-content {
-        margin: 1rem;
-        padding: 1.5rem;
+        margin: 0.5rem;
+        padding: 1rem;
     }
     
     .promotion-piece {
-        font-size: 3rem;
-        padding: 0.5rem;
+        font-size: 2.5rem;
+        padding: 0.4rem;
+    }
+    
+    .move-history {
+        height: 250px;
     }
 }

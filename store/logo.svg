@@ -1,0 +1,76 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3c72;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2a5298;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="pieceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f0f0f0;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Fundo circular -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGrad)" stroke="#f0d000" stroke-width="4"/>
+  
+  <!-- Tabuleiro simplificado -->
+  <rect x="24" y="24" width="80" height="80" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+  
+  <!-- Padrão xadrez simplificado -->
+  <g opacity="0.2">
+    <rect x="32" y="32" width="16" height="16" fill="#fff"/>
+    <rect x="64" y="32" width="16" height="16" fill="#fff"/>
+    <rect x="48" y="48" width="16" height="16" fill="#fff"/>
+    <rect x="80" y="48" width="16" height="16" fill="#fff"/>
+    <rect x="32" y="64" width="16" height="16" fill="#fff"/>
+    <rect x="64" y="64" width="16" height="16" fill="#fff"/>
+    <rect x="48" y="80" width="16" height="16" fill="#fff"/>
+    <rect x="80" y="80" width="16" height="16" fill="#fff"/>
+  </g>
+  
+  <!-- Rei central grande e limpo -->
+  <g filter="url(#glow)">
+    <!-- Sombra da base -->
+    <ellipse cx="64" cy="95" rx="14" ry="5" fill="rgba(0,0,0,0.4)"/>
+    
+    <!-- Base do rei -->
+    <rect x="52" y="85" width="24" height="12" rx="4" fill="url(#pieceGrad)" stroke="#ddd" stroke-width="1"/>
+    
+    <!-- Corpo -->
+    <rect x="57" y="60" width="14" height="28" rx="3" fill="url(#pieceGrad)" stroke="#ddd" stroke-width="1"/>
+    
+    <!-- Cabeça -->
+    <circle cx="64" cy="50" r="9" fill="url(#pieceGrad)" stroke="#ddd" stroke-width="1"/>
+    
+    <!-- Coroa -->
+    <rect x="57" y="38" width="14" height="8" rx="2" fill="#f0d000" stroke="#e6c200" stroke-width="1"/>
+    
+    <!-- Pontas da coroa -->
+    <polygon points="57,38 59,32 61,38" fill="#f0d000" stroke="#e6c200" stroke-width="0.5"/>
+    <polygon points="61,38 64,30 67,38" fill="#f0d000" stroke="#e6c200" stroke-width="0.5"/>
+    <polygon points="67,38 69,32 71,38" fill="#f0d000" stroke="#e6c200" stroke-width="0.5"/>
+    
+    <!-- Cruz no topo -->
+    <rect x="63" y="25" width="2" height="8" fill="#f0d000"/>
+    <rect x="60" y="27" width="8" height="2" fill="#f0d000"/>
+    
+    <!-- Detalhes decorativos -->
+    <circle cx="64" cy="42" r="2" fill="#e74c3c"/>
+    <rect x="59" y="65" width="10" height="6" rx="1" fill="none" stroke="#f0d000" stroke-width="1.5"/>
+  </g>
+  
+  <!-- Brilhos sutis -->
+  <circle cx="45" cy="45" r="2" fill="rgba(240,208,0,0.6)"/>
+  <circle cx="83" cy="45" r="2" fill="rgba(240,208,0,0.6)"/>
+  <circle cx="45" cy="83" r="2" fill="rgba(240,208,0,0.6)"/>
+  <circle cx="83" cy="83" r="2" fill="rgba(240,208,0,0.6)"/>
+</svg>
