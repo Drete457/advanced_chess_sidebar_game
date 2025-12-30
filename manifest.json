@@ -4,7 +4,8 @@
   "version": "1.1.0",
   "description": "Advanced chess in the Chrome side panel with themes, sounds, flip board, time controls, and saved preferences.",
   "permissions": [
-    "sidePanel"
+    "sidePanel",
+    "notifications"
   ],
   "action": {
     "default_title": "Open Chess Game"

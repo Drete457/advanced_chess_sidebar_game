@@ -76,7 +76,7 @@ body {
     color: var(--text-color);
     min-height: 100vh;
     overflow-x: auto;
-    min-width: 880px;
+    min-width: 720px;
     width: 100%;
 }
 
@@ -631,29 +631,14 @@ main {
 }
 
 .promotion-pieces {
-    display: flex;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
     justify-content: center;
     margin-bottom: 1rem;
 }
 
 .promotion-piece {
-    font-size: 4rem;
-    padding: 1rem;
-    border: 3px solid #ddd;
-    border-radius: 10px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.promotion-piece:hover {
-    border-color: #007bff;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-}
-
-#newGameFromModal {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -664,18 +649,38 @@ main {
     background: #f5f5f5;
     border: 1px solid #ddd;
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+}
+
+.promotion-piece:hover {
+    border-color: #007bff;
+    background: #f0f8ff;
+    transform: scale(1.05);
+}
+
+#newGameFromModal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    background: linear-gradient(45deg, var(--primary) 0%, var(--primary-2) 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
     transition: all 0.3s ease;
 }
 
 #newGameFromModal:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
 
 .promo-label {
     font-size: 0.8rem;
     color: var(--muted);
-}
 }
 
 /* Responsiveness for sidebar */

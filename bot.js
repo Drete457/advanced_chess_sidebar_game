@@ -3,6 +3,7 @@ class ChessAI {
     constructor(difficulty = DIFFICULTIES.MEDIUM) {
         this.difficulty = difficulty;
         this.maxDepth = this.getMaxDepth(difficulty);
+        this.tt = new Map(); // transposition table
         
         // Piece values
         this.positionValues = {
@@ -90,13 +91,14 @@ class ChessAI {
 
     // Choose the best move using minimax with alpha-beta pruning
     getBestMove(game) {
+        this.tt.clear();
         const gameState = game.getGameState();
         if (gameState.gameOver) return null;
 
         const aiColor = gameState.currentPlayer; // AI plays the side to move
         const maximizing = aiColor === COLORS.BLACK; // evaluation is positive for black
 
-        const allMoves = game.getAllPossibleMoves(aiColor);
+        const allMoves = this.orderMoves(game, game.getAllPossibleMoves(aiColor), maximizing, gameState);
         if (allMoves.length === 0) return null;
 
         let bestMove = null;
@@ -134,12 +136,23 @@ class ChessAI {
     minimax(game, depth, alpha, beta, maximizingPlayer) {
         const state = game.getGameState();
 
+        const ttKey = this.getStateKey(state);
+        const ttEntry = this.tt.get(ttKey);
+        if (ttEntry && ttEntry.depth >= depth) {
+            return ttEntry.value;
+        }
+
         if (depth === 0 || state.gameOver) {
-            return this.evaluatePosition(state);
+            const standPat = this.evaluatePosition(state);
+            const q = this.quiescence(game, standPat, alpha, beta, maximizingPlayer);
+            if (!state.gameOver) {
+                this.tt.set(ttKey, { depth, value: q });
+            }
+            return q;
         }
 
         const currentColor = state.currentPlayer;
-        const allMoves = game.getAllPossibleMoves(currentColor);
+        const allMoves = this.orderMoves(game, game.getAllPossibleMoves(currentColor), maximizingPlayer, state);
 
         // No moves available -> checkmate or stalemate
         if (allMoves.length === 0) {
@@ -166,6 +179,7 @@ class ChessAI {
                     if (alpha >= beta) return value; // beta cut-off
                 }
             }
+            this.tt.set(ttKey, { depth, value });
             return value;
         }
 
@@ -184,7 +198,112 @@ class ChessAI {
                 if (beta <= alpha) return value; // alpha cut-off
             }
         }
+        this.tt.set(ttKey, { depth, value });
         return value;
+    }
+
+    quiescence(game, standPat, alpha, beta, maximizingPlayer) {
+        let value = standPat;
+        if (maximizingPlayer) {
+            if (value > beta) return beta;
+            if (value > alpha) alpha = value;
+        } else {
+            if (value < alpha) return alpha;
+            if (value < beta) beta = value;
+        }
+
+        const state = game.getGameState();
+        const capturesOnly = this.getCapturingMoves(game, state.currentPlayer);
+
+        for (const { piece, moves } of capturesOnly) {
+            for (const move of moves) {
+                const promotionNeeded = piece.type === PIECE_TYPES.PAWN && (move.row === 0 || move.row === 7);
+                const ok = promotionNeeded
+                    ? game.makeMove(piece.position, move, PIECE_TYPES.QUEEN)
+                    : game.makeMove(piece.position, move);
+                if (!ok) continue;
+                const score = this.quiescence(game, this.evaluatePosition(game.getGameState()), alpha, beta, !maximizingPlayer);
+                game.undoMove();
+
+                if (maximizingPlayer) {
+                    if (score > value) value = score;
+                    if (value > alpha) alpha = value;
+                    if (alpha >= beta) return beta;
+                } else {
+                    if (score < value) value = score;
+                    if (value < beta) beta = value;
+                    if (beta <= alpha) return alpha;
+                }
+            }
+        }
+        return value;
+    }
+
+    orderMoves(game, allMoves, maximizing, state) {
+        const scored = [];
+        for (const { piece, moves } of allMoves) {
+            const scoredMoves = moves.map(move => ({
+                piece,
+                move,
+                score: this.moveScore(state, piece, move)
+            }));
+            scored.push({ piece, moves: scoredMoves });
+        }
+        // Flatten, sort, then regroup by piece
+        const flat = scored.flatMap(entry => entry.moves.map(m => ({ piece: entry.piece, move: m.move, score: m.score })));
+        flat.sort((a, b) => maximizing ? b.score - a.score : a.score - b.score);
+        // Rebuild grouped structure expected by callers
+        const grouped = [];
+        flat.forEach(({ piece, move, score }) => {
+            let bucket = grouped.find(g => g.piece === piece);
+            if (!bucket) {
+                bucket = { piece, moves: [], score };
+                grouped.push(bucket);
+            }
+            bucket.moves.push(move);
+        });
+        return grouped;
+    }
+
+    moveScore(state, piece, move) {
+        const target = state.board[move.row][move.col];
+        let score = 0;
+        if (target && target.color !== piece.color) {
+            score += this.positionValues[target.type] * 10; // MVV-LVA style
+            score -= this.positionValues[piece.type];
+        }
+        if (piece.type === PIECE_TYPES.PAWN && (move.row === 0 || move.row === 7)) {
+            score += 500; // promotion bias
+        }
+        // Prefer central moves slightly
+        if (move.row >= 2 && move.row <= 5 && move.col >= 2 && move.col <= 5) score += 5;
+        return score;
+    }
+
+    getCapturingMoves(game, color) {
+        const all = game.getAllPossibleMoves(color);
+        return all.map(({ piece, moves }) => ({
+            piece,
+            moves: moves.filter(m => game.board[m.row][m.col] && game.board[m.row][m.col].color !== piece.color)
+        })).filter(entry => entry.moves.length);
+    }
+
+    getStateKey(state) {
+        const boardKey = state.board.map(row => row.map(p => {
+            if (!p) return '.';
+            return (p.type[0]) + (p.color === COLORS.WHITE ? 'w' : 'b');
+        }).join('')).join('/');
+        const toMove = state.currentPlayer === COLORS.WHITE ? 'w' : 'b';
+        const castling = [
+            state.castlingRights?.white?.kingside ? 'K' : '',
+            state.castlingRights?.white?.queenside ? 'Q' : '',
+            state.castlingRights?.black?.kingside ? 'k' : '',
+            state.castlingRights?.black?.queenside ? 'q' : ''
+        ].join('') || '-';
+        const ep = state.enPassantTarget ? `${state.enPassantTarget.row}${state.enPassantTarget.col}` : '-';
+        const halfmove = state.halfmoveClock ?? 0;
+        const fullmove = state.fullmoveNumber ?? 1;
+        return `${boardKey}|${toMove}|${castling}|${ep}|${halfmove}|${fullmove}`;
     }
 
     // Evaluate a specific move with enhanced strategic considerations

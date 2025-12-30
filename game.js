@@ -12,6 +12,7 @@ class ChessGameController {
         this.soundEnabled = true;
         this.timeControlMinutes = 15;
         this.audioContext = null;
+        this.audioCache = {};
         this.timers = {
             white: this.timeControlMinutes * 60,
             black: this.timeControlMinutes * 60
@@ -506,40 +507,31 @@ class ChessGameController {
         this.isTimerRunning = true;
     }
 
-    initAudio() {
-        if (this.audioContext) return;
-        try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            this.soundEnabled = false;
-        }
-    }
-
     playSound(type) {
         if (!this.soundEnabled) return;
-        this.initAudio();
-        if (!this.audioContext) return;
 
-        const ctx = this.audioContext;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const now = ctx.currentTime;
-
-        const profiles = {
-            move: { freq: 540, duration: 0.08, vol: 0.07 },
-            capture: { freq: 320, duration: 0.12, vol: 0.09 },
-            check: { freq: 760, duration: 0.18, vol: 0.1 },
-            gameover: { freq: 200, duration: 0.35, vol: 0.12 }
+        // Tiny embedded beeps (WAV base64) per event
+        const sounds = {
+            move: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAABAQH//wD/AAAAAP//AP///w==',
+            capture: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAABAQD/AAAA//8A/wD/AP8=',
+            check: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAAA/wD/AP8A/wD/AP8A/w==',
+            gameover: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAD/AP8A/wD/AP8A/wD/AAAA'
         };
 
-        const profile = profiles[type] || profiles.move;
-        osc.frequency.value = profile.freq;
-        gain.gain.setValueAtTime(profile.vol, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + profile.duration);
-
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + profile.duration);
+        const src = sounds[type] || sounds.move;
+        try {
+            if (!this.audioCache[type]) {
+                const audio = new Audio(src);
+                audio.volume = 0.25;
+                this.audioCache[type] = audio;
+            }
+            const audio = this.audioCache[type].cloneNode();
+            audio.volume = 0.25;
+            audio.play().catch(() => {});
+        } catch (e) {
+            // Best-effort: disable sound if it repeatedly fails
+            console.error('Sound play failed', e);
+        }
     }
 
     updateTimerDisplay() {
@@ -588,6 +580,22 @@ class ChessGameController {
             }
 
             this.showGameOverModal(message);
+            this.showNotification('Game Over', message);
+        }
+    }
+
+    showNotification(title, message) {
+        try {
+            if (typeof chrome !== 'undefined' && chrome.notifications && chrome.notifications.create) {
+                chrome.notifications.create('', {
+                    type: 'basic',
+                    iconUrl: 'icons/icon128.png',
+                    title,
+                    message
+                });
+            }
+        } catch (e) {
+            console.warn('Notification failed', e);
         }
     }
 
@@ -686,7 +694,7 @@ class ChessGameController {
         try {
             localStorage.setItem(this.preferencesKey, JSON.stringify(prefs));
         } catch (e) {
-            // Best-effort only
+            console.warn('Failed to save preferences', e);
         }
     }
 
