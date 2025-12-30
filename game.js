@@ -3,6 +3,7 @@ class ChessGameController {
     constructor() {
         this.game = new ChessGame();
         this.ai = new ChessAI(DIFFICULTIES.MEDIUM);
+        this.aiColor = COLORS.BLACK;
         this.gameMode = GAME_MODES.HUMAN_VS_HUMAN;
         this.isAITurn = false;
         this.selectedSquare = null;
@@ -331,17 +332,20 @@ class ChessGameController {
 
         // If AI mode and now it's bot's turn
         if (this.gameMode === GAME_MODES.HUMAN_VS_BOT && 
-            this.game.getCurrentPlayer() === COLORS.BLACK) {
+            this.game.getCurrentPlayer() === this.aiColor) {
             await this.makeAIMove();
         }
     }
 
     async makeAIMove() {
+        if (this.game.getCurrentPlayer() !== this.aiColor) {
+            return;
+        }
         this.isAITurn = true;
         this.updateGameStatus('AI thinking...');
 
         try {
-            const aiMove = await this.ai.getAIMove(this.game);
+            const aiMove = await this.ai.getAIMove(this.game, this.aiColor);
             
             if (aiMove && aiMove.length === 2) {
                 const [from, to] = aiMove;

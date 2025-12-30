@@ -90,14 +90,14 @@ class ChessAI {
     }
 
     // Choose the best move using minimax with alpha-beta pruning
-    getBestMove(game) {
+    getBestMove(game, forColor) {
         if (this.tt.size > 10000) {
             this.tt.clear();
         }
         const gameState = game.getGameState();
         if (gameState.gameOver) return null;
 
-        const aiColor = gameState.currentPlayer; // AI plays the side to move
+        const aiColor = forColor || gameState.currentPlayer; // explicit side if provided
         const maximizing = aiColor === COLORS.BLACK; // evaluation is positive for black
 
         const allMoves = this.orderMoves(game, game.getAllPossibleMoves(aiColor), maximizing, gameState);
@@ -556,9 +556,10 @@ class ChessAI {
     }
 
     // Method to make a semi-intelligent move (for easy difficulty)
-    getRandomMove(game) {
+    getRandomMove(game, forColor) {
         const gameState = game.getGameState();
-        const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
+        const color = forColor || gameState.currentPlayer;
+        const allMoves = game.getAllPossibleMoves(color);
         
         if (allMoves.length === 0) return null;
 
@@ -588,7 +589,8 @@ class ChessAI {
     }
 
     // Main method to get AI move
-    async getAIMove(game) {
+    async getAIMove(game, aiColor) {
+        const color = aiColor || game.getGameState().currentPlayer;
         // Simulate "thinking" time
         await new Promise(resolve => {
             const thinkingTime = this.difficulty === DIFFICULTIES.EASY ? 300 : 
@@ -601,23 +603,23 @@ class ChessAI {
             case DIFFICULTIES.EASY:
                 // 60% chance of random move, 40% best move
                 if (Math.random() < 0.6) {
-                    return this.getRandomMove(game);
+                    return this.getRandomMove(game, color);
                 }
-                return this.getBestMove(game);
+                return this.getBestMove(game, color);
 
             case DIFFICULTIES.MEDIUM:
                 // 20% chance of random move, 80% best move
                 if (Math.random() < 0.2) {
-                    return this.getRandomMove(game);
+                    return this.getRandomMove(game, color);
                 }
-                return this.getBestMove(game);
+                return this.getBestMove(game, color);
 
             case DIFFICULTIES.HARD:
                 // Always best move
-                return this.getBestMoveAsync(game);
+                return this.getBestMoveAsync(game, color);
 
             default:
-                return this.getBestMove(game);
+                return this.getBestMove(game, color);
         }
     }
 
@@ -659,9 +661,9 @@ class ChessAI {
     }
 
     // Minimal async wrapper to yield UI thread before heavy search
-    async getBestMoveAsync(game) {
+    async getBestMoveAsync(game, forColor) {
         return new Promise(resolve => {
-            setTimeout(() => resolve(this.getBestMove(game)), 0);
+            setTimeout(() => resolve(this.getBestMove(game, forColor)), 0);
         });
     }
 }
