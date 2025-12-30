@@ -186,6 +186,9 @@ class ChessGame {
         }
         const piece = this.board[from.row][from.col];
         if (!piece) return false;
+        if (piece.color !== this.currentPlayer) {
+            return false; // Enforce turn: only the side to move may act
+        }
 
         // Snapshot state for undo
         this.stateStack.push(this.cloneState());

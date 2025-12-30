@@ -345,35 +345,55 @@ class ChessGameController {
         this.updateGameStatus('AI thinking...');
 
         try {
-            const aiMove = await this.ai.getAIMove(this.game, this.aiColor);
-            
-            if (aiMove && aiMove.length === 2) {
-                const [from, to] = aiMove;
-                
-                // Check if AI move is pawn promotion
+            const validateAIMove = (move) => {
+                if (!move || move.length !== 2) return null;
+                const [from, to] = move;
+                const piece = this.game.board[from.row]?.[from.col];
+                if (!piece || piece.color !== this.aiColor) return null;
+                return [from, to];
+            };
+
+            const pickFallbackMove = () => {
+                const legal = this.game.getAllPossibleMoves(this.aiColor);
+                for (const { piece, moves } of legal) {
+                    if (moves.length) {
+                        return [piece.position, moves[0]];
+                    }
+                }
+                return null;
+            };
+
+            const executeMove = async (candidate, allowFallback) => {
+                const validMove = validateAIMove(candidate);
+                if (!validMove) return false;
+                const [from, to] = validMove;
                 const piece = this.game.board[from.row][from.col];
                 const isPromotion = piece && piece.type === PIECE_TYPES.PAWN && (to.row === 0 || to.row === 7);
-                
-                let moveSuccess;
-                if (isPromotion) {
-                    // AI always promotes to queen
-                    moveSuccess = this.game.makeMove(from, to, PIECE_TYPES.QUEEN);
-                } else {
-                    moveSuccess = this.game.makeMove(from, to);
-                }
-                
+
+                const moveSuccess = isPromotion
+                    ? this.game.makeMove(from, to, PIECE_TYPES.QUEEN)
+                    : this.game.makeMove(from, to);
+
                 if (moveSuccess) {
-                    // Small pause for better visual experience
                     await new Promise(resolve => setTimeout(resolve, 100));
                     await this.handleMoveComplete();
-                    this.renderBoard(); // Ensure board is rendered after AI move
-                } else {
-                    console.error('AI move failed to execute');
-                    this.updateGameStatus('AI move failed - continue playing');
+                    this.renderBoard();
+                    return true;
                 }
-            } else {
-                console.error('AI returned invalid move:', aiMove);
-                this.updateGameStatus('AI found no moves - continue playing');
+
+                if (allowFallback) {
+                    const fallback = pickFallbackMove();
+                    return fallback ? executeMove(fallback, false) : false;
+                }
+                return false;
+            };
+
+            const aiMove = await this.ai.getAIMove(this.game, this.aiColor);
+            const moved = await executeMove(aiMove, true);
+
+            if (!moved) {
+                console.error('AI move failed or was invalid:', aiMove);
+                this.updateGameStatus('AI move failed - continue playing');
             }
         } catch (error) {
             console.error('AI move error:', error);

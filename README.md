@@ -235,6 +235,9 @@ const DEBUG_MODE = true;
 
 ## 📝 Changelog
 
+### v2.0.1
+- ✅ Enforced turn legality so AI cannot move the human player's pieces; fallbacks if AI returns an invalid move
+
 ### v2.0.0
 - ✅ AI bound to its color so the bot never moves the player's pieces
 - ✅ Hard difficulty capped to depth 3 with async yielding to keep the UI responsive
