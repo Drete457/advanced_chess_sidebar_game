@@ -242,7 +242,12 @@ class ChessGameController {
                 }
 
                 if (!square._bound) {
-                    square.addEventListener('click', () => this.handleSquareClick(row, col));
+                    square.addEventListener('click', (e) => {
+                        const target = e.currentTarget;
+                        const r = Number(target.dataset.row);
+                        const c = Number(target.dataset.col);
+                        this.handleSquareClick(r, c);
+                    });
                     square._bound = true;
                 }
             }
