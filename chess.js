@@ -72,6 +72,9 @@ class ChessGame {
             black: { kingside: true, queenside: true }
         };
         this.enPassantTarget = undefined;
+        this.halfmoveClock = 0; // 50-move rule counter (half-moves)
+        this.positionCounts = new Map(); // repetition detection
+        this.recordPosition();
     }
 
     createInitialBoard() {
@@ -180,8 +183,14 @@ class ChessGame {
         let isEnPassant = false;
         let isCastling = false;
 
+        const prevCastlingRights = JSON.parse(JSON.stringify(this.castlingRights));
+        const prevEnPassantTarget = this.enPassantTarget ? { ...this.enPassantTarget } : undefined;
+        const prevHalfmoveClock = this.halfmoveClock;
+        const prevPieceHasMoved = piece.hasMoved;
+        let prevRookHasMoved = false;
+
         // Check en passant
-        if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget && 
+        if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget &&
             to.row === this.enPassantTarget.row && to.col === this.enPassantTarget.col) {
             isEnPassant = true;
             const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
@@ -193,12 +202,15 @@ class ChessGame {
         }
 
         // Check castling
+        let rookFromCol;
+        let rookToCol;
         if (piece.type === PIECE_TYPES.KING && Math.abs(to.col - from.col) === 2) {
             isCastling = true;
-            const rookFromCol = to.col > from.col ? 7 : 0;
-            const rookToCol = to.col > from.col ? to.col - 1 : to.col + 1;
+            rookFromCol = to.col > from.col ? 7 : 0;
+            rookToCol = to.col > from.col ? to.col - 1 : to.col + 1;
             const rook = this.board[from.row][rookFromCol];
             if (rook) {
+                prevRookHasMoved = rook.hasMoved;
                 this.board[from.row][rookToCol] = rook;
                 this.board[from.row][rookFromCol] = null;
                 rook.position = { row: from.row, col: rookToCol };
@@ -226,8 +238,19 @@ class ChessGame {
             }
         }
 
-        // Update castling rights
+        // Update castling rights for moving piece
         this.updateCastlingRights(piece, from);
+
+        // Update castling rights if a rook was captured
+        if (capturedPiece && capturedPiece.type === PIECE_TYPES.ROOK) {
+            if (capturedPiece.color === COLORS.WHITE) {
+                if (to.row === 7 && to.col === 0) this.castlingRights.white.queenside = false;
+                if (to.row === 7 && to.col === 7) this.castlingRights.white.kingside = false;
+            } else {
+                if (to.row === 0 && to.col === 0) this.castlingRights.black.queenside = false;
+                if (to.row === 0 && to.col === 7) this.castlingRights.black.kingside = false;
+            }
+        }
 
         // Set en passant target
         this.enPassantTarget = undefined;
@@ -236,6 +259,13 @@ class ChessGame {
                 row: piece.color === COLORS.WHITE ? from.row - 1 : from.row + 1,
                 col: from.col
             };
+        }
+
+        // Halfmove clock (50-move rule)
+        if (piece.type === PIECE_TYPES.PAWN || capturedPiece || isEnPassant) {
+            this.halfmoveClock = 0;
+        } else {
+            this.halfmoveClock += 1;
         }
 
         // Create move object
@@ -247,7 +277,14 @@ class ChessGame {
             isEnPassant,
             isCastling,
             promotionPiece,
-            notation: this.generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling)
+            notation: this.generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling),
+            prevCastlingRights,
+            prevEnPassantTarget,
+            prevHalfmoveClock,
+            prevPieceHasMoved,
+            rookFromCol,
+            rookToCol,
+            prevRookHasMoved
         };
 
         this.moveHistory.push(move);
@@ -257,6 +294,9 @@ class ChessGame {
 
         // Check for check and checkmate
         this.updateCheckStatus();
+
+        // Record position for repetition detection before draw checks that rely on it
+        move.positionKey = this.recordPosition();
         this.checkGameEnd();
 
         return true;
@@ -395,9 +435,13 @@ class ChessGame {
         if (!piece.hasMoved && !this.inCheck[piece.color]) {
             // Kingside castling
             if (this.castlingRights[piece.color].kingside) {
-                if (!this.board[row][col + 1] && !this.board[row][col + 2]) {
+                const pathClear = !this.board[row][col + 1] && !this.board[row][col + 2];
+                if (pathClear) {
                     const rook = this.board[row][7];
-                    if (rook && !rook.hasMoved) {
+                    const oppColor = piece.color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+                    const safeSquares = !this.isSquareAttacked(row, col + 1, oppColor) &&
+                                        !this.isSquareAttacked(row, col + 2, oppColor);
+                    if (rook && !rook.hasMoved && safeSquares) {
                         moves.push({ row, col: col + 2 });
                     }
                 }
@@ -405,9 +449,13 @@ class ChessGame {
 
             // Queenside castling
             if (this.castlingRights[piece.color].queenside) {
-                if (!this.board[row][col - 1] && !this.board[row][col - 2] && !this.board[row][col - 3]) {
+                const pathClear = !this.board[row][col - 1] && !this.board[row][col - 2] && !this.board[row][col - 3];
+                if (pathClear) {
                     const rook = this.board[row][0];
-                    if (rook && !rook.hasMoved) {
+                    const oppColor = piece.color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+                    const safeSquares = !this.isSquareAttacked(row, col - 1, oppColor) &&
+                                        !this.isSquareAttacked(row, col - 2, oppColor);
+                    if (rook && !rook.hasMoved && safeSquares) {
                         moves.push({ row, col: col - 2 });
                     }
                 }
@@ -468,20 +516,113 @@ class ChessGame {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
+    isSquareAttacked(row, col, byColor) {
+        // Scan all pieces of the attacker color and see if they attack the square
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = this.board[r][c];
+                if (piece && piece.color === byColor) {
+                    const attacks = this.getPieceAttacks(piece);
+                    if (attacks.some(pos => pos.row === row && pos.col === col)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    generatePositionKey() {
+        const boardKey = this.board.map(row => row.map(piece => {
+            if (!piece) return '.';
+            const colorChar = piece.color === COLORS.WHITE ? 'w' : 'b';
+            const typeChar = piece.type[0];
+            return typeChar + colorChar;
+        }).join('')).join('/');
+
+        const toMove = this.currentPlayer === COLORS.WHITE ? 'w' : 'b';
+
+        const castling = [
+            this.castlingRights.white.kingside ? 'K' : '',
+            this.castlingRights.white.queenside ? 'Q' : '',
+            this.castlingRights.black.kingside ? 'k' : '',
+            this.castlingRights.black.queenside ? 'q' : ''
+        ].join('') || '-';
+
+        const enPassant = this.enPassantTarget ? `${this.enPassantTarget.row}${this.enPassantTarget.col}` : '-';
+
+        return `${boardKey}|${toMove}|${castling}|${enPassant}`;
+    }
+
+    recordPosition() {
+        const key = this.generatePositionKey();
+        const count = this.positionCounts.get(key) || 0;
+        this.positionCounts.set(key, count + 1);
+        return key;
+    }
+
+    getCastlingDiagnostics(color) {
+        const reasons = { kingside: [], queenside: [] };
+        const kingPos = this.findKing(color);
+        if (!kingPos) return reasons;
+        const king = this.board[kingPos.row][kingPos.col];
+        const backRank = color === COLORS.WHITE ? 7 : 0;
+        const opp = color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+
+        const evaluateSide = (side) => {
+            const rookCol = side === 'kingside' ? 7 : 0;
+            const step = side === 'kingside' ? 1 : -1;
+            const targetCol = side === 'kingside' ? 6 : 2;
+            const throughCol = side === 'kingside' ? 5 : 3;
+            const farCol = side === 'kingside' ? null : 1;
+
+            const rook = this.board[backRank][rookCol];
+            if (!rook || rook.type !== PIECE_TYPES.ROOK) reasons[side].push('Rook missing');
+            if (rook && rook.hasMoved) reasons[side].push('Rook already moved');
+            if (!king || king.hasMoved) reasons[side].push('King already moved');
+            if (this.inCheck[color]) reasons[side].push('King is in check');
+
+            if (this.board[backRank][kingPos.col + step]) reasons[side].push('Square next to king occupied');
+            if (this.board[backRank][targetCol]) reasons[side].push('Destination square occupied');
+            if (farCol !== null && this.board[backRank][farCol]) reasons[side].push('Path blocked');
+
+            if (this.isSquareAttacked(backRank, kingPos.col + step, opp)) reasons[side].push('Square next to king is attacked');
+            if (this.isSquareAttacked(backRank, targetCol, opp)) reasons[side].push('Destination square is attacked');
+        };
+
+        evaluateSide('kingside');
+        evaluateSide('queenside');
+        return reasons;
+    }
+
     wouldBeInCheck(from, to) {
-        // Make temporary move
         const piece = this.board[from.row][from.col];
         const capturedPiece = this.board[to.row][to.col];
-        
+
+        let enPassantCapture = null;
+
+        // Handle en passant capture removal during simulation
+        if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget &&
+            to.row === this.enPassantTarget.row && to.col === this.enPassantTarget.col &&
+            !capturedPiece) {
+            const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
+            enPassantCapture = this.board[capturedPawnRow][to.col];
+            this.board[capturedPawnRow][to.col] = null;
+        }
+
+        // Make temporary move
         this.board[to.row][to.col] = piece;
         this.board[from.row][from.col] = null;
 
-        // Check if king is in check
         const inCheck = this.isKingInCheck(piece.color);
 
         // Undo move
         this.board[from.row][from.col] = piece;
         this.board[to.row][to.col] = capturedPiece;
+        if (enPassantCapture) {
+            const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
+            this.board[capturedPawnRow][to.col] = enPassantCapture;
+        }
 
         return inCheck;
     }
@@ -615,7 +756,7 @@ class ChessGame {
         }
 
         // Check other draw conditions
-        if (this.isDrawByInsufficientMaterial() || this.isDrawByRepetition()) {
+        if (this.isDrawByInsufficientMaterial() || this.isDrawByRepetition() || this.halfmoveClock >= 100) {
             this.gameOver = true;
             this.winner = 'draw';
         }
@@ -659,8 +800,9 @@ class ChessGame {
     }
 
     isDrawByRepetition() {
-        // Simplified implementation - in practice would be more complex
-        return false;
+        const key = this.generatePositionKey();
+        const count = this.positionCounts.get(key) || 0;
+        return count >= 3;
     }
 
     generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling) {
@@ -709,12 +851,25 @@ class ChessGame {
         if (this.moveHistory.length === 0) return false;
 
         const lastMove = this.moveHistory.pop();
-        const { from, to, piece, capturedPiece, isEnPassant, isCastling } = lastMove;
+        const { from, to, piece, capturedPiece, isEnPassant, isCastling, prevCastlingRights,
+                prevEnPassantTarget, prevHalfmoveClock, prevPieceHasMoved, rookFromCol, rookToCol,
+                prevRookHasMoved, positionKey } = lastMove;
+
+        // Remove recorded position for the undone move
+        if (positionKey) {
+            const count = this.positionCounts.get(positionKey) || 0;
+            if (count > 1) {
+                this.positionCounts.set(positionKey, count - 1);
+            } else {
+                this.positionCounts.delete(positionKey);
+            }
+        }
 
         // Restore piece to original position
         this.board[from.row][from.col] = piece;
         this.board[to.row][to.col] = capturedPiece || null;
         piece.position = from;
+        piece.hasMoved = prevPieceHasMoved;
 
         // Undo en passant
         if (isEnPassant && capturedPiece) {
@@ -724,14 +879,13 @@ class ChessGame {
         }
 
         // Undo castling
-        if (isCastling) {
-            const rookToCol = to.col > from.col ? 7 : 0;
-            const rookFromCol = to.col > from.col ? to.col - 1 : to.col + 1;
-            const rook = this.board[from.row][rookFromCol];
+        if (isCastling && rookFromCol !== undefined && rookToCol !== undefined) {
+            const rook = this.board[from.row][rookToCol];
             if (rook) {
-                this.board[from.row][rookToCol] = rook;
-                this.board[from.row][rookFromCol] = null;
-                rook.position = { row: from.row, col: rookToCol };
+                this.board[from.row][rookFromCol] = rook;
+                this.board[from.row][rookToCol] = null;
+                rook.position = { row: from.row, col: rookFromCol };
+                rook.hasMoved = prevRookHasMoved;
             }
         }
 
@@ -740,7 +894,12 @@ class ChessGame {
             this.capturedPieces[capturedPiece.color].pop();
         }
 
-        // Switch player
+        // Restore auxiliary state
+        this.castlingRights = prevCastlingRights;
+        this.enPassantTarget = prevEnPassantTarget;
+        this.halfmoveClock = prevHalfmoveClock;
+
+        // Switch player back
         this.currentPlayer = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
 
         // Reset game state
@@ -767,6 +926,9 @@ class ChessGame {
             black: { kingside: true, queenside: true }
         };
         this.enPassantTarget = undefined;
+        this.halfmoveClock = 0;
+        this.positionCounts = new Map();
+        this.recordPosition();
     }
 
     // Check if game is over

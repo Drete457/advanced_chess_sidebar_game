@@ -88,49 +88,103 @@ class ChessAI {
         }
     }
 
-    // Make the best move using optimized evaluation algorithm
+    // Choose the best move using minimax with alpha-beta pruning
     getBestMove(game) {
         const gameState = game.getGameState();
-        
         if (gameState.gameOver) return null;
 
-        // Get all possible moves with optimization
-        const allMoves = game.getAllPossibleMoves(gameState.currentPlayer);
+        const aiColor = gameState.currentPlayer; // AI plays the side to move
+        const maximizing = aiColor === COLORS.BLACK; // evaluation is positive for black
+
+        const allMoves = game.getAllPossibleMoves(aiColor);
         if (allMoves.length === 0) return null;
 
         let bestMove = null;
-        let bestScore = -Infinity;
+        let bestScore = maximizing ? -Infinity : Infinity;
 
-        // Collect and evaluate all moves
-        const moveEvaluations = [];
         for (const { piece, moves } of allMoves) {
             for (const move of moves) {
-                const score = this.evaluateMove(gameState, piece, move);
-                moveEvaluations.push({
-                    from: piece.position,
-                    to: move,
-                    score: score,
-                    piece: piece
-                });
+                const promotionNeeded = piece.type === PIECE_TYPES.PAWN && (move.row === 0 || move.row === 7);
+                const moveSuccess = promotionNeeded
+                    ? game.makeMove(piece.position, move, PIECE_TYPES.QUEEN)
+                    : game.makeMove(piece.position, move);
+
+                if (!moveSuccess) continue;
+
+                const score = this.minimax(game, this.maxDepth - 1, -Infinity, Infinity, !maximizing);
+                game.undoMove();
+
+                if (maximizing) {
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = [piece.position, move];
+                    }
+                } else {
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestMove = [piece.position, move];
+                    }
+                }
             }
         }
 
-        // Sort moves by score (best first) for better performance
-        moveEvaluations.sort((a, b) => b.score - a.score);
+        return bestMove;
+    }
 
-        // Select the best move (with some difficulty-based variation)
-        const topMoves = moveEvaluations.slice(0, Math.max(1, Math.floor(moveEvaluations.length * 0.3)));
-        
-        if (this.difficulty === DIFFICULTIES.EASY && topMoves.length > 3) {
-            // Easy mode: sometimes pick from top 3 moves randomly
-            const randomIndex = Math.floor(Math.random() * Math.min(3, topMoves.length));
-            const selectedMove = topMoves[randomIndex];
-            return [selectedMove.from, selectedMove.to];
-        } else {
-            // Medium/Hard: pick the absolute best move
-            const bestEval = moveEvaluations[0];
-            return [bestEval.from, bestEval.to];
+    minimax(game, depth, alpha, beta, maximizingPlayer) {
+        const state = game.getGameState();
+
+        if (depth === 0 || state.gameOver) {
+            return this.evaluatePosition(state);
         }
+
+        const currentColor = state.currentPlayer;
+        const allMoves = game.getAllPossibleMoves(currentColor);
+
+        // No moves available -> checkmate or stalemate
+        if (allMoves.length === 0) {
+            if (state.inCheck[currentColor]) {
+                // Mate is bad for the side to move
+                return currentColor === COLORS.BLACK ? -20000 : 20000;
+            }
+            return 0; // stalemate
+        }
+
+        if (maximizingPlayer) {
+            let value = -Infinity;
+            for (const { piece, moves } of allMoves) {
+                for (const move of moves) {
+                    const promotionNeeded = piece.type === PIECE_TYPES.PAWN && (move.row === 0 || move.row === 7);
+                    const moveSuccess = promotionNeeded
+                        ? game.makeMove(piece.position, move, PIECE_TYPES.QUEEN)
+                        : game.makeMove(piece.position, move);
+                    if (!moveSuccess) continue;
+
+                    value = Math.max(value, this.minimax(game, depth - 1, alpha, beta, false));
+                    game.undoMove();
+                    alpha = Math.max(alpha, value);
+                    if (alpha >= beta) return value; // beta cut-off
+                }
+            }
+            return value;
+        }
+
+        let value = Infinity;
+        for (const { piece, moves } of allMoves) {
+            for (const move of moves) {
+                const promotionNeeded = piece.type === PIECE_TYPES.PAWN && (move.row === 0 || move.row === 7);
+                const moveSuccess = promotionNeeded
+                    ? game.makeMove(piece.position, move, PIECE_TYPES.QUEEN)
+                    : game.makeMove(piece.position, move);
+                if (!moveSuccess) continue;
+
+                value = Math.min(value, this.minimax(game, depth - 1, alpha, beta, true));
+                game.undoMove();
+                beta = Math.min(beta, value);
+                if (beta <= alpha) return value; // alpha cut-off
+            }
+        }
+        return value;
     }
 
     // Evaluate a specific move with enhanced strategic considerations

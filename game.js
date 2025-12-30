@@ -8,24 +8,43 @@ class ChessGameController {
         this.selectedSquare = null;
         this.validMoves = [];
         this.promotionResolver = null;
+        this.isBoardFlipped = false;
+        this.soundEnabled = true;
+        this.timeControlMinutes = 15;
+        this.audioContext = null;
         this.timers = {
-            white: 15 * 60, // 15 minutes in seconds
-            black: 15 * 60
+            white: this.timeControlMinutes * 60,
+            black: this.timeControlMinutes * 60
         };
         this.timerInterval = null;
         this.isTimerRunning = false;
+        this.preferencesKey = 'ac_sidebar_chess_prefs';
+
+        this.loadPreferences();
 
         this.initializeGame();
         this.setupEventListeners();
     }
 
     initializeGame() {
+        this.applyTheme(this.currentTheme || 'classic');
+        this.syncControls();
         this.renderBoard();
         this.updateGameInfo();
         this.updateMoveHistory();
         this.updateCapturedPieces();
         this.updatePossibleMoves();
         this.startTimer();
+    }
+
+    applyTheme(theme) {
+        document.body.classList.remove('theme-dark', 'theme-contrast');
+        if (theme === 'dark') {
+            document.body.classList.add('theme-dark');
+        } else if (theme === 'contrast') {
+            document.body.classList.add('theme-contrast');
+        }
+        this.currentTheme = theme;
     }
 
     setupEventListeners() {
@@ -48,6 +67,29 @@ class ChessGameController {
             this.undoMove();
         });
 
+        document.getElementById('flipBoard').addEventListener('click', () => {
+            this.isBoardFlipped = !this.isBoardFlipped;
+            this.savePreferences();
+            this.renderBoard();
+            this.updatePossibleMoves();
+        });
+
+        document.getElementById('timeControl').addEventListener('change', (e) => {
+            this.timeControlMinutes = parseInt(e.target.value, 10);
+            this.savePreferences();
+            this.resetGame();
+        });
+
+        document.getElementById('soundToggle').addEventListener('change', (e) => {
+            this.soundEnabled = e.target.checked;
+            this.savePreferences();
+        });
+
+        document.getElementById('themeSelect').addEventListener('change', (e) => {
+            this.applyTheme(e.target.value);
+            this.savePreferences();
+        });
+
         // Promotion modal
         document.querySelectorAll('.promotion-piece').forEach(button => {
             button.addEventListener('click', (e) => {
@@ -64,6 +106,22 @@ class ChessGameController {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
+            const promotionOpen = !document.getElementById('promotionModal').classList.contains('hidden');
+            if (promotionOpen) {
+                const key = e.key.toLowerCase();
+                if (['q','r','b','n'].includes(key)) {
+                    e.preventDefault();
+                    const map = { q: 'queen', r: 'tower', b: 'bishop', n: 'horse' };
+                    this.resolvePromotion(map[key]);
+                    return;
+                }
+                if (key === 'escape') {
+                    e.preventDefault();
+                    this.resolvePromotion('queen');
+                    return;
+                }
+            }
+
             switch (e.key) {
                 case 'r':
                 case 'R':
@@ -79,6 +137,14 @@ class ChessGameController {
                         this.undoMove();
                     }
                     break;
+            }
+        });
+
+        // Close promotion by clicking backdrop (defaults to Queen)
+        const promotionModal = document.getElementById('promotionModal');
+        promotionModal.addEventListener('click', (e) => {
+            if (e.target === promotionModal) {
+                this.resolvePromotion('queen');
             }
         });
     }
@@ -98,10 +164,13 @@ class ChessGameController {
 
         const gameState = this.game.getGameState();
 
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
+        for (let displayRow = 0; displayRow < 8; displayRow++) {
+            for (let displayCol = 0; displayCol < 8; displayCol++) {
+                const row = this.isBoardFlipped ? 7 - displayRow : displayRow;
+                const col = this.isBoardFlipped ? 7 - displayCol : displayCol;
+
                 const square = document.createElement('div');
-                square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                square.className = `square ${(displayRow + displayCol) % 2 === 0 ? 'light' : 'dark'}`;
                 square.dataset.row = row;
                 square.dataset.col = col;
 
@@ -146,6 +215,18 @@ class ChessGameController {
                 boardElement.appendChild(square);
             }
         }
+
+        // Update coordinates based on orientation
+        const ranks = this.isBoardFlipped ? ['1','2','3','4','5','6','7','8'] : ['8','7','6','5','4','3','2','1'];
+        const files = this.isBoardFlipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
+        const ranksEl = document.getElementById('ranksLeft');
+        const filesEl = document.getElementById('filesBottom');
+        if (ranksEl) {
+            ranksEl.innerHTML = ranks.map(r => `<span>${r}</span>`).join('');
+        }
+        if (filesEl) {
+            filesEl.innerHTML = files.map(f => `<span>${f}</span>`).join('');
+        }
     }
 
     async handleSquareClick(row, col) {
@@ -154,6 +235,20 @@ class ChessGameController {
         const result = this.game.selectSquare(row, col);
         this.selectedSquare = result.selected;
         this.validMoves = result.validMoves;
+
+        // Hint why castling might not be available when selecting the king
+        const pickedPiece = this.game.board[row][col];
+        if (pickedPiece && pickedPiece.type === PIECE_TYPES.KING && this.selectedSquare) {
+            const diag = this.game.getCastlingDiagnostics(pickedPiece.color);
+            const blocks = [];
+            const hasKingside = this.validMoves.some(m => Math.abs(m.col - col) === 2 && m.col > col);
+            const hasQueenside = this.validMoves.some(m => Math.abs(m.col - col) === 2 && m.col < col);
+            if (!hasKingside && diag.kingside.length) blocks.push(`Kingside: ${diag.kingside[0]}`);
+            if (!hasQueenside && diag.queenside.length) blocks.push(`Queenside: ${diag.queenside[0]}`);
+            if (blocks.length) {
+                this.updateGameStatus(blocks.join(' | '));
+            }
+        }
 
         this.renderBoard();
         this.updatePossibleMoves();
@@ -187,6 +282,21 @@ class ChessGameController {
         this.updateMoveHistory();
         this.updateCapturedPieces();
         this.updatePossibleMoves();
+
+        // Audio feedback based on last move
+        const history = this.game.getMoveHistory();
+        const lastMove = history[history.length - 1];
+        if (lastMove) {
+            if (this.game.isGameOver()) {
+                this.playSound('gameover');
+            } else if (this.game.isInCheck()) {
+                this.playSound('check');
+            } else if (lastMove.capturedPiece) {
+                this.playSound('capture');
+            } else {
+                this.playSound('move');
+            }
+        }
 
         // Check game end
         if (this.game.isGameOver()) {
@@ -255,12 +365,12 @@ class ChessGameController {
 
         if (this.game.isInCheck()) {
             this.updateGameStatus(`${playerName} in CHECK!`);
-            gameStatus.style.background = '#ffebee';
-            gameStatus.style.color = '#c62828';
+            gameStatus.style.background = 'var(--check-bg)';
+            gameStatus.style.color = 'var(--check-text)';
         } else {
             this.updateGameStatus(`${playerName}'s turn`);
-            gameStatus.style.background = '#e3f2fd';
-            gameStatus.style.color = '#1976d2';
+            gameStatus.style.background = 'var(--status-bg)';
+            gameStatus.style.color = 'var(--status-text)';
         }
     }
 
@@ -274,47 +384,34 @@ class ChessGameController {
         
         moveHistoryElement.innerHTML = '';
 
-        for (let i = 0; i < moveHistory.length; i++) {
-            const move = moveHistory[i];
-            const moveElement = document.createElement('div');
-            moveElement.className = 'move-item';
-            
+        for (let i = 0; i < moveHistory.length; i += 2) {
+            const whiteMove = moveHistory[i];
+            const blackMove = moveHistory[i + 1];
             const moveNumber = Math.floor(i / 2) + 1;
-            const isWhite = i % 2 === 0;
-            
-            // Create player indicator
-            const playerIndicator = document.createElement('span');
-            playerIndicator.className = 'player-indicator';
-            
-            if (isWhite) {
-                playerIndicator.textContent = '♔';
-                playerIndicator.classList.add('white-player');
-                moveElement.classList.add('white-move');
-            } else {
-                playerIndicator.textContent = '♚';
-                playerIndicator.classList.add('black-player');
-                moveElement.classList.add('black-move');
-            }
-            
-            // Create move text
-            const moveText = document.createElement('span');
-            moveText.className = 'move-text';
-            
-            if (isWhite) {
-                moveText.textContent = `${moveNumber}. ${move.notation}`;
-            } else {
-                moveText.textContent = `${moveNumber}. ${move.notation}`;
+
+            const row = document.createElement('div');
+            row.className = 'move-item grouped';
+
+            const number = document.createElement('span');
+            number.className = 'move-number';
+            number.textContent = `${moveNumber}.`;
+            row.appendChild(number);
+
+            const whiteSpan = document.createElement('span');
+            whiteSpan.className = 'move-text white-move';
+            whiteSpan.textContent = whiteMove ? whiteMove.notation : '';
+            row.appendChild(whiteSpan);
+
+            const blackSpan = document.createElement('span');
+            blackSpan.className = 'move-text black-move';
+            blackSpan.textContent = blackMove ? blackMove.notation : '';
+            row.appendChild(blackSpan);
+
+            if (i === moveHistory.length - 1 || i + 1 === moveHistory.length - 1) {
+                row.classList.add('current');
             }
 
-            // Assemble the move element
-            moveElement.appendChild(playerIndicator);
-            moveElement.appendChild(moveText);
-
-            if (i === moveHistory.length - 1) {
-                moveElement.classList.add('current');
-            }
-
-            moveHistoryElement.appendChild(moveElement);
+            moveHistoryElement.appendChild(row);
         }
 
         // Multiple approaches to ensure scroll to bottom works reliably
@@ -409,6 +506,42 @@ class ChessGameController {
         this.isTimerRunning = true;
     }
 
+    initAudio() {
+        if (this.audioContext) return;
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            this.soundEnabled = false;
+        }
+    }
+
+    playSound(type) {
+        if (!this.soundEnabled) return;
+        this.initAudio();
+        if (!this.audioContext) return;
+
+        const ctx = this.audioContext;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const now = ctx.currentTime;
+
+        const profiles = {
+            move: { freq: 540, duration: 0.08, vol: 0.07 },
+            capture: { freq: 320, duration: 0.12, vol: 0.09 },
+            check: { freq: 760, duration: 0.18, vol: 0.1 },
+            gameover: { freq: 200, duration: 0.35, vol: 0.12 }
+        };
+
+        const profile = profiles[type] || profiles.move;
+        osc.frequency.value = profile.freq;
+        gain.gain.setValueAtTime(profile.vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + profile.duration);
+
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + profile.duration);
+    }
+
     updateTimerDisplay() {
         const whiteTimer = document.getElementById('whiteTimer');
         const blackTimer = document.getElementById('blackTimer');
@@ -419,6 +552,9 @@ class ChessGameController {
         // Highlight current player's timer
         whiteTimer.style.fontWeight = this.game.getCurrentPlayer() === COLORS.WHITE ? 'bold' : 'normal';
         blackTimer.style.fontWeight = this.game.getCurrentPlayer() === COLORS.BLACK ? 'bold' : 'normal';
+
+        whiteTimer.classList.toggle('low-time', this.timers.white <= 10);
+        blackTimer.classList.toggle('low-time', this.timers.black <= 10);
     }
 
     formatTime(seconds) {
@@ -509,7 +645,10 @@ class ChessGameController {
         this.selectedSquare = null;
         this.validMoves = [];
         this.isAITurn = false;
-        this.timers = { white: 15 * 60, black: 15 * 60 };
+        this.timers = { 
+            white: this.timeControlMinutes * 60, 
+            black: this.timeControlMinutes * 60 
+        };
         
         this.renderBoard();
         this.updateGameInfo();
@@ -521,6 +660,45 @@ class ChessGameController {
         
         this.hideModal('gameOverModal');
         this.hideModal('promotionModal');
+    }
+
+    loadPreferences() {
+        try {
+            const raw = localStorage.getItem(this.preferencesKey);
+            if (!raw) return;
+            const prefs = JSON.parse(raw);
+            if (typeof prefs.flip === 'boolean') this.isBoardFlipped = prefs.flip;
+            if (typeof prefs.sound === 'boolean') this.soundEnabled = prefs.sound;
+            if (typeof prefs.time === 'number') this.timeControlMinutes = prefs.time;
+            if (typeof prefs.theme === 'string') this.currentTheme = prefs.theme;
+        } catch (e) {
+            // Ignore corrupt storage
+        }
+    }
+
+    savePreferences() {
+        const prefs = {
+            flip: this.isBoardFlipped,
+            sound: this.soundEnabled,
+            time: this.timeControlMinutes,
+            theme: this.currentTheme || 'classic'
+        };
+        try {
+            localStorage.setItem(this.preferencesKey, JSON.stringify(prefs));
+        } catch (e) {
+            // Best-effort only
+        }
+    }
+
+    syncControls() {
+        const soundToggle = document.getElementById('soundToggle');
+        if (soundToggle) soundToggle.checked = this.soundEnabled;
+
+        const timeControl = document.getElementById('timeControl');
+        if (timeControl) timeControl.value = String(this.timeControlMinutes);
+
+        const themeSelect = document.getElementById('themeSelect');
+        if (themeSelect) themeSelect.value = this.currentTheme || 'classic';
     }
 }
 
