@@ -656,7 +656,7 @@ class ChessGameController {
                 });
             }
         } catch (e) {
-            console.warn('Notification failed', e);
+            // Ignore notification failures to avoid noisy logs
         }
     }
 
@@ -755,7 +755,7 @@ class ChessGameController {
         try {
             localStorage.setItem(this.preferencesKey, JSON.stringify(prefs));
         } catch (e) {
-            console.warn('Failed to save preferences', e);
+            // Storage may be unavailable (quota/permissions); fail silently
         }
     }
 

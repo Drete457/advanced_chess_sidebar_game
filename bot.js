@@ -91,7 +91,9 @@ class ChessAI {
 
     // Choose the best move using minimax with alpha-beta pruning
     getBestMove(game) {
-        this.tt.clear();
+        if (this.tt.size > 10000) {
+            this.tt.clear();
+        }
         const gameState = game.getGameState();
         if (gameState.gameOver) return null;
 

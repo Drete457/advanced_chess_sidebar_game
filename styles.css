@@ -76,7 +76,7 @@ body {
     color: var(--text-color);
     min-height: 100vh;
     overflow-x: auto;
-    min-width: 720px;
+    min-width: 360px;
     width: 100%;
 }
 
@@ -232,7 +232,7 @@ main {
 }
 
 .captured-piece {
-    font-size: 2rem;
+    font-size: calc(var(--square-size) * 0.6);
     opacity: 0.7;
     transition: opacity 0.3s ease;
 }
@@ -264,7 +264,7 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: calc(var(--square-size) * 0.75);
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -371,7 +371,7 @@ main {
     justify-content: space-around;
     font-weight: bold;
     color: #ffffff;
-    font-size: 1.3rem; 
+    font-size: calc(var(--square-size) * 0.32);
     margin-bottom: 0.5rem;
     margin-top: 0.5rem;
     text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.7); 
@@ -392,7 +392,7 @@ main {
     height: var(--board-size);
     font-weight: bold;
     color: #ffffff;
-    font-size: 1.3rem; 
+    font-size: calc(var(--square-size) * 0.32);
     text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.7); 
 }
 
@@ -413,7 +413,7 @@ main {
     border-radius: 15px;
     padding: 1rem;
     box-shadow: var(--panel-shadow);
-    height: 480px; 
+    height: calc(var(--board-size) * 0.9);
     display: flex;
     flex-direction: column;
 }
@@ -424,7 +424,7 @@ main {
     text-align: center;
     color: var(--text-color);
     flex-shrink: 0; 
-    font-size: 1.1rem;
+    font-size: calc(var(--square-size) * 0.28);
 }
 
 .moves-list {
@@ -439,7 +439,7 @@ main {
 
 /* Custom scrollbar for move history */
 .moves-list::-webkit-scrollbar {
-    width: 6px;
+    width: clamp(4px, calc(var(--square-size) * 0.12), 10px);
 }
 
 .moves-list::-webkit-scrollbar-track {
@@ -465,7 +465,7 @@ main {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
+    font-size: calc(var(--square-size) * 0.26);
 }
 
 .move-item.grouped {
@@ -474,7 +474,8 @@ main {
 }
 
 .move-number {
-    width: 3ch;
+    width: calc(var(--square-size) * 0.6);
+    min-width: 3ch;
     text-align: right;
     font-weight: 700;
     color: var(--text-color);
@@ -685,39 +686,25 @@ main {
 
 /* Responsiveness for sidebar */
 @media (max-width: 1200px) {
+    :root {
+        --square-size: 65px;
+        --board-size: calc(var(--square-size) * 8);
+    }
+
     .game-container {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto;
         text-align: center;
         gap: 0.75rem;
     }
-    
-    .chess-board {
-        justify-self: center;
-        grid-template-columns: repeat(8, 65px);
-        grid-template-rows: repeat(8, 65px);
-    }
-    
-    .square {
-        width: 65px;
-        height: 65px;
-        font-size: 2.5rem;
-    }
-    
-    .coordinates {
-        width: 520px;
-    }
-    
-    .ranks {
-        height: 520px;
-    }
-    
-    .ranks span {
-        height: 65px;
-    }
 }
 
 @media (max-width: 768px) {
+    :root {
+        --square-size: 50px;
+        --board-size: calc(var(--square-size) * 8);
+    }
+
     header {
         padding: 0.5rem;
     }
@@ -736,71 +723,26 @@ main {
     main {
         padding: 0.75rem;
     }
-    
-    .chess-board {
-        grid-template-columns: repeat(8, 50px);
-        grid-template-rows: repeat(8, 50px);
+}
+
+@media (max-width: 720px) {
+    header h1 {
+        font-size: 1.2rem;
     }
-    
-    .square {
-        width: 50px;
-        height: 50px;
-        font-size: 2rem;
-    }
-    
-    .coordinates {
-        width: 400px; 
-    }
-    
-    .files {
-        font-size: 1rem;
-    }
-    
-    .ranks {
-        height: 400px; 
-        font-size: 1rem;
-    }
-    
-    .ranks span {
-        height: 50px;
-    }
-    
-    .move-history {
-        height: 300px;
+
+    .game-controls {
+        flex-wrap: wrap;
     }
 }
 
 @media (max-width: 480px) {
+    :root {
+        --square-size: 40px;
+        --board-size: calc(var(--square-size) * 8);
+    }
+
     body {
-        min-width: 540px;
-    }
-    
-    .chess-board {
-        grid-template-columns: repeat(8, 40px);
-        grid-template-rows: repeat(8, 40px);
-    }
-    
-    .square {
-        width: 40px;
-        height: 40px;
-        font-size: 1.8rem;
-    }
-    
-    .coordinates {
-        width: 320px;
-    }
-    
-    .files {
-        font-size: 0.9rem;
-    }
-    
-    .ranks {
-        height: 320px; 
-        font-size: 0.9rem;
-    }
-    
-    .ranks span {
-        height: 40px;
+        min-width: 360px;
     }
     
     .modal-content {
