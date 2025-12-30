@@ -911,11 +911,18 @@ class ChessGame {
         this.recordPosition();
     }
 
+    clonePiece(piece) {
+        if (!piece) return null;
+        const copy = new Piece(piece.type, piece.color, { ...piece.position });
+        copy.hasMoved = piece.hasMoved;
+        return copy;
+    }
+
     cloneState() {
-        const cloneBoard = this.board.map(row => row.map(p => p ? p.clone() : null));
+        const cloneBoard = this.board.map(row => row.map(p => this.clonePiece(p)));
         const cloneCaptured = {
-            white: this.capturedPieces.white.map(p => p.clone()),
-            black: this.capturedPieces.black.map(p => p.clone())
+            white: this.capturedPieces.white.map(p => this.clonePiece(p)),
+            black: this.capturedPieces.black.map(p => this.clonePiece(p))
         };
         return {
             board: cloneBoard,
@@ -934,12 +941,12 @@ class ChessGame {
     }
 
     restoreState(state) {
-        this.board = state.board.map(row => row.map(p => p ? p.clone() : null));
+        this.board = state.board.map(row => row.map(p => this.clonePiece(p)));
         this.currentPlayer = state.currentPlayer;
         this.moveHistory = [...state.moveHistory];
         this.capturedPieces = {
-            white: state.capturedPieces.white.map(p => p.clone()),
-            black: state.capturedPieces.black.map(p => p.clone())
+            white: state.capturedPieces.white.map(p => this.clonePiece(p)),
+            black: state.capturedPieces.black.map(p => this.clonePiece(p))
         };
         this.gameOver = state.gameOver;
         this.winner = state.winner;

@@ -657,6 +657,9 @@ class ChessGameController {
             }
         } catch (e) {
             // Ignore notification failures to avoid noisy logs
+            const originalTitle = document.title;
+            document.title = `${title}: ${message}`;
+            setTimeout(() => { document.title = originalTitle; }, 3000);
         }
     }
 
