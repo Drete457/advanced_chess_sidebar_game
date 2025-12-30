@@ -84,7 +84,7 @@ class ChessAI {
         switch (difficulty) {
             case DIFFICULTIES.EASY: return 2;
             case DIFFICULTIES.MEDIUM: return 3;
-            case DIFFICULTIES.HARD: return 4;
+            case DIFFICULTIES.HARD: return 3; // keep UI responsive on hard
             default: return 3;
         }
     }
@@ -614,7 +614,7 @@ class ChessAI {
 
             case DIFFICULTIES.HARD:
                 // Always best move
-                return this.getBestMove(game);
+                return this.getBestMoveAsync(game);
 
             default:
                 return this.getBestMove(game);
@@ -656,5 +656,12 @@ class ChessAI {
         this.maxDepth = originalDepth;
         
         return result;
+    }
+
+    // Minimal async wrapper to yield UI thread before heavy search
+    async getBestMoveAsync(game) {
+        return new Promise(resolve => {
+            setTimeout(() => resolve(this.getBestMove(game)), 0);
+        });
     }
 }
