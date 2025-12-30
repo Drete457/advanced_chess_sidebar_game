@@ -64,6 +64,7 @@ class ChessGame {
         this.capturedPieces = { white: [], black: [] };
         this.gameOver = false;
         this.winner = undefined;
+        this.drawReason = undefined;
         this.selectedSquare = undefined;
         this.validMoves = [];
         this.inCheck = { white: false, black: false };
@@ -112,6 +113,7 @@ class ChessGame {
             },
             gameOver: this.gameOver,
             winner: this.winner,
+            drawReason: this.drawReason,
             inCheck: { ...this.inCheck },
             castlingRights: JSON.parse(JSON.stringify(this.castlingRights)),
             enPassantTarget: this.enPassantTarget ? { ...this.enPassantTarget } : undefined,
@@ -597,6 +599,8 @@ class ChessGame {
 
             if (this.isSquareAttacked(backRank, kingPos.col + step, opp)) reasons[side].push('Square next to king is attacked');
             if (this.isSquareAttacked(backRank, targetCol, opp)) reasons[side].push('Destination square is attacked');
+
+            if (!this.castlingRights[color][side]) reasons[side].push('Castling rights lost');
         };
 
         evaluateSide('kingside');
@@ -750,6 +754,7 @@ class ChessGame {
     }
 
     checkGameEnd() {
+        this.drawReason = undefined;
         const hasValidMoves = this.hasValidMoves(this.currentPlayer);
 
         if (!hasValidMoves) {
@@ -757,17 +762,30 @@ class ChessGame {
                 // Checkmate
                 this.gameOver = true;
                 this.winner = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+                this.drawReason = undefined;
             } else {
                 // Stalemate draw
                 this.gameOver = true;
                 this.winner = 'draw';
+                this.drawReason = 'Stalemate';
             }
         }
 
         // Check other draw conditions
-        if (this.isDrawByInsufficientMaterial() || this.isDrawByRepetition() || this.halfmoveClock >= 100) {
-            this.gameOver = true;
-            this.winner = 'draw';
+        if (!this.gameOver) {
+            if (this.isDrawByInsufficientMaterial()) {
+                this.gameOver = true;
+                this.winner = 'draw';
+                this.drawReason = 'Insufficient material';
+            } else if (this.isDrawByRepetition()) {
+                this.gameOver = true;
+                this.winner = 'draw';
+                this.drawReason = 'Threefold repetition';
+            } else if (this.halfmoveClock >= 100) {
+                this.gameOver = true;
+                this.winner = 'draw';
+                this.drawReason = 'Fifty-move rule';
+            }
         }
     }
 
@@ -878,6 +896,7 @@ class ChessGame {
         this.capturedPieces = { white: [], black: [] };
         this.gameOver = false;
         this.winner = undefined;
+        this.drawReason = undefined;
         this.selectedSquare = undefined;
         this.validMoves = [];
         this.inCheck = { white: false, black: false };
@@ -905,6 +924,7 @@ class ChessGame {
             capturedPieces: cloneCaptured,
             gameOver: this.gameOver,
             winner: this.winner,
+            drawReason: this.drawReason,
             inCheck: { ...this.inCheck },
             castlingRights: JSON.parse(JSON.stringify(this.castlingRights)),
             enPassantTarget: this.enPassantTarget ? { ...this.enPassantTarget } : undefined,
@@ -923,6 +943,7 @@ class ChessGame {
         };
         this.gameOver = state.gameOver;
         this.winner = state.winner;
+        this.drawReason = state.drawReason;
         this.inCheck = { ...state.inCheck };
         this.castlingRights = JSON.parse(JSON.stringify(state.castlingRights));
         this.enPassantTarget = state.enPassantTarget ? { ...state.enPassantTarget } : undefined;

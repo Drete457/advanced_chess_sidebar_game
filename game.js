@@ -11,8 +11,7 @@ class ChessGameController {
         this.isBoardFlipped = false;
         this.soundEnabled = true;
         this.timeControlMinutes = 15;
-        this.audioContext = null;
-        this.audioCache = {};
+        this.sounds = {};
         this.timers = {
             white: this.timeControlMinutes * 60,
             black: this.timeControlMinutes * 60
@@ -20,8 +19,10 @@ class ChessGameController {
         this.timerInterval = null;
         this.isTimerRunning = false;
         this.preferencesKey = 'ac_sidebar_chess_prefs';
+        this.boardSquares = null;
 
         this.loadPreferences();
+        this.initSounds();
 
         this.initializeGame();
         this.setupEventListeners();
@@ -161,19 +162,47 @@ class ChessGameController {
 
     renderBoard() {
         const boardElement = document.getElementById('chessBoard');
-        boardElement.innerHTML = '';
+        if (!this.boardSquares) {
+            this.boardSquares = [];
+            for (let displayRow = 0; displayRow < 8; displayRow++) {
+                for (let displayCol = 0; displayCol < 8; displayCol++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(displayRow + displayCol) % 2 === 0 ? 'light' : 'dark'}`;
+                    this.boardSquares.push(square);
+                    boardElement.appendChild(square);
+                }
+            }
+        }
 
+        this.updateBoardContent();
+
+        // Update coordinates based on orientation
+        const ranks = this.isBoardFlipped ? ['1','2','3','4','5','6','7','8'] : ['8','7','6','5','4','3','2','1'];
+        const files = this.isBoardFlipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
+        const ranksEl = document.getElementById('ranksLeft');
+        const filesEl = document.getElementById('filesBottom');
+        if (ranksEl) {
+            ranksEl.innerHTML = ranks.map(r => `<span>${r}</span>`).join('');
+        }
+        if (filesEl) {
+            filesEl.innerHTML = files.map(f => `<span>${f}</span>`).join('');
+        }
+    }
+
+    updateBoardContent() {
         const gameState = this.game.getGameState();
 
         for (let displayRow = 0; displayRow < 8; displayRow++) {
             for (let displayCol = 0; displayCol < 8; displayCol++) {
+                const index = displayRow * 8 + displayCol;
+                const square = this.boardSquares[index];
                 const row = this.isBoardFlipped ? 7 - displayRow : displayRow;
                 const col = this.isBoardFlipped ? 7 - displayCol : displayCol;
 
-                const square = document.createElement('div');
-                square.className = `square ${(displayRow + displayCol) % 2 === 0 ? 'light' : 'dark'}`;
                 square.dataset.row = row;
                 square.dataset.col = col;
+                square.innerHTML = '';
+                square.classList.remove('selected', 'valid-move', 'capture-move', 'last-move', 'check');
 
                 const piece = gameState.board[row][col];
                 if (piece) {
@@ -185,7 +214,6 @@ class ChessGameController {
                     square.appendChild(pieceElement);
                 }
 
-                // Add special classes
                 if (this.selectedSquare && this.selectedSquare.row === row && this.selectedSquare.col === col) {
                     square.classList.add('selected');
                 }
@@ -198,7 +226,6 @@ class ChessGameController {
                     }
                 }
 
-                // Highlight last move
                 if (gameState.moveHistory.length > 0) {
                     const lastMove = gameState.moveHistory[gameState.moveHistory.length - 1];
                     if ((lastMove.from.row === row && lastMove.from.col === col) ||
@@ -207,26 +234,15 @@ class ChessGameController {
                     }
                 }
 
-                // Highlight king in check
                 if (piece && piece.type === PIECE_TYPES.KING && gameState.inCheck[piece.color]) {
                     square.classList.add('check');
                 }
 
-                square.addEventListener('click', () => this.handleSquareClick(row, col));
-                boardElement.appendChild(square);
+                if (!square._bound) {
+                    square.addEventListener('click', () => this.handleSquareClick(row, col));
+                    square._bound = true;
+                }
             }
-        }
-
-        // Update coordinates based on orientation
-        const ranks = this.isBoardFlipped ? ['1','2','3','4','5','6','7','8'] : ['8','7','6','5','4','3','2','1'];
-        const files = this.isBoardFlipped ? ['h','g','f','e','d','c','b','a'] : ['a','b','c','d','e','f','g','h'];
-        const ranksEl = document.getElementById('ranksLeft');
-        const filesEl = document.getElementById('filesBottom');
-        if (ranksEl) {
-            ranksEl.innerHTML = ranks.map(r => `<span>${r}</span>`).join('');
-        }
-        if (filesEl) {
-            filesEl.innerHTML = files.map(f => `<span>${f}</span>`).join('');
         }
     }
 
@@ -508,30 +524,74 @@ class ChessGameController {
     }
 
     playSound(type) {
-        if (!this.soundEnabled) return;
+        if (!this.soundEnabled || !this.sounds[type]) return;
 
-        // Tiny embedded beeps (WAV base64) per event
-        const sounds = {
-            move: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAABAQH//wD/AAAAAP//AP///w==',
-            capture: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAABAQD/AAAA//8A/wD/AP8=',
-            check: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAAA/wD/AP8A/wD/AP8A/w==',
-            gameover: 'data:audio/wav;base64,UklGRlQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAD/AP8A/wD/AP8A/wD/AAAA'
+        const audio = this.sounds[type].cloneNode();
+        audio.volume = 0.25;
+        audio.play().catch(() => {});
+    }
+
+    initSounds() {
+        const profiles = {
+            move: { freq: 540, duration: 0.08 },
+            capture: { freq: 320, duration: 0.12 },
+            check: { freq: 760, duration: 0.18 },
+            gameover: { freq: 200, duration: 0.35 }
         };
 
-        const src = sounds[type] || sounds.move;
-        try {
-            if (!this.audioCache[type]) {
-                const audio = new Audio(src);
-                audio.volume = 0.25;
-                this.audioCache[type] = audio;
-            }
-            const audio = this.audioCache[type].cloneNode();
+        Object.keys(profiles).forEach(type => {
+            const audio = new Audio();
             audio.volume = 0.25;
-            audio.play().catch(() => {});
-        } catch (e) {
-            // Best-effort: disable sound if it repeatedly fails
-            console.error('Sound play failed', e);
+            audio.src = this.generateToneDataURL(profiles[type]);
+            this.sounds[type] = audio;
+        });
+    }
+
+    generateToneDataURL(profile) {
+        const sampleRate = 8000;
+        const numSamples = Math.floor(sampleRate * profile.duration);
+        const samples = new Int16Array(numSamples);
+
+        for (let i = 0; i < numSamples; i++) {
+            const t = i / sampleRate;
+            const value = Math.sin(2 * Math.PI * profile.freq * t) * Math.exp(-3 * t);
+            samples[i] = Math.max(-32768, Math.min(32767, Math.floor(value * 32767)));
         }
+
+        const wavBytes = this.createWav(samples, sampleRate);
+        const binary = String.fromCharCode.apply(null, wavBytes);
+        return `data:audio/wav;base64,${btoa(binary)}`;
+    }
+
+    createWav(samples, sampleRate) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+
+        const writeString = (offset, str) => {
+            for (let i = 0; i < str.length; i++) {
+                view.setUint8(offset + i, str.charCodeAt(i));
+            }
+        };
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+
+        for (let i = 0; i < samples.length; i++) {
+            view.setInt16(44 + i * 2, samples[i], true);
+        }
+
+        return new Uint8Array(buffer);
     }
 
     updateTimerDisplay() {
@@ -569,7 +629,8 @@ class ChessGameController {
             let message = '';
 
             if (winner === 'draw') {
-                message = 'Draw!';
+                const reason = this.game.getGameState().drawReason;
+                message = reason ? `Draw: ${reason}` : 'Draw!';
             } else {
                 const winnerName = winner === COLORS.WHITE ? 'White' : 'Black';
                 if (this.game.isInCheck(winner === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE)) {
