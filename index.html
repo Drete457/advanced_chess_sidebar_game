@@ -11,30 +11,50 @@
         <header>
             <h1>♔ Advanced Chess ♛</h1>
             <div class="game-controls">
-                <select id="gameMode">
-                    <option value="human-vs-human">Human vs Human</option>
-                    <option value="human-vs-bot">Human vs Bot</option>
-                </select>
-                <select id="difficulty" style="display: none;">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-                <select id="timeControl">
-                    <option value="5">5 | 0</option>
-                    <option value="10">10 | 0</option>
-                    <option value="15" selected>15 | 0</option>
-                    <option value="30">30 | 0</option>
-                </select>
-                <select id="themeSelect">
-                    <option value="classic" selected>Classic</option>
-                    <option value="dark">Dark</option>
-                    <option value="contrast">High Contrast</option>
-                </select>
-                <label class="toggle sound-toggle"><input type="checkbox" id="soundToggle" checked> Sound</label>
-                <button id="flipBoard" title="Flip board">Flip</button>
-                <button id="newGame">New Game</button>
-                <button id="undoMove">Undo</button>
+                <div class="control-group">
+                    <span class="control-label">Mode</span>
+                    <select id="gameMode">
+                        <option value="human-vs-human">Human vs Human</option>
+                        <option value="human-vs-bot">Human vs Bot</option>
+                    </select>
+                </div>
+                <div class="control-group" id="difficultyGroup" style="display: none;">
+                    <span class="control-label">Difficulty</span>
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Time</span>
+                    <select id="timeControl">
+                        <option value="5">5 | 5</option>
+                        <option value="10">10 | 10</option>
+                        <option value="15" selected>15 | 15</option>
+                        <option value="30">30 | 30</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Theme</span>
+                    <select id="themeSelect">
+                        <option value="classic" selected>Classic</option>
+                        <option value="dark">Dark</option>
+                        <option value="contrast">High Contrast</option>
+                    </select>
+                </div>
+                <div class="control-group toggle-group">
+                    <span class="control-label">Sound</span>
+                    <label class="toggle sound-toggle"><input type="checkbox" id="soundToggle" checked> Sound</label>
+                </div>
+                <div class="control-group buttons-group">
+                    <span class="control-label">Actions</span>
+                    <div class="control-buttons">
+                        <button id="flipBoard" title="Flip board">Flip</button>
+                        <button id="newGame">New Game</button>
+                        <button id="undoMove">Undo</button>
+                    </div>
+                </div>
             </div>
         </header>
 

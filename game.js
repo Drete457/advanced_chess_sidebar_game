@@ -153,10 +153,13 @@ class ChessGameController {
 
     toggleDifficultySelector() {
         const difficultySelect = document.getElementById('difficulty');
+        const difficultyGroup = document.getElementById('difficultyGroup');
         if (this.gameMode === GAME_MODES.HUMAN_VS_BOT) {
             difficultySelect.style.display = 'inline-block';
+            if (difficultyGroup) difficultyGroup.style.display = 'flex';
         } else {
             difficultySelect.style.display = 'none';
+            if (difficultyGroup) difficultyGroup.style.display = 'none';
         }
     }
 

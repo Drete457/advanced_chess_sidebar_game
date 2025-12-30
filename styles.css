@@ -110,6 +110,31 @@ header h1 {
     flex-wrap: wrap;
 }
 
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    align-items: center;
+    text-align: center;
+}
+
+.control-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.toggle-group .toggle {
+    margin-top: 0.1rem;
+}
+
 .game-controls select,
 .game-controls button {
     padding: 0.5rem 1rem;
