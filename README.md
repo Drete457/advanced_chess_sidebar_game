@@ -1,6 +1,6 @@
 # Advanced Chess - Sidebar Game
 
-Chrome extension that brings a full chess experience to the browser side panel, now with themes, sounds, board flip, and saved preferences.
+Chrome extension that brings a full chess experience to the browser side panel, now with themes, sounds, board flip, saved preferences, and improved accessibility/AI handling.
 
 ## 📋 Overview
 
@@ -18,8 +18,9 @@ This extension transforms Chrome's sidebar into an advanced chess platform, allo
 - Undo with full state restoration
 
 ### 🤖 AI
-- Minimax with alpha-beta pruning and positional evaluation
-- Depth per difficulty (2/3/4 plies)
+- Minimax with alpha-beta pruning, positional evaluation, move ordering, and quiescence
+- Depth per difficulty (2/3/3 plies) with async yielding to keep the UI responsive
+- Explicit color handling so the bot only moves its own side
 
 ### 🎨 Interface and UX
 - **Responsive board** with `clamp()` sizing and optional flip
@@ -27,9 +28,10 @@ This extension transforms Chrome's sidebar into an advanced chess platform, allo
 - **Sound toggle** with move/capture/check/gameover cues
 - **Time controls** presets (5, 10, 15, 30 minutes)
 - **Preferences persistence** (theme, sound, flip, time)
-- **Grouped move history** by move number
+- **Grouped move history** by move number with improved contrast per theme
 - **Castling hints** explaining unavailability
 - Promotion modal with shortcuts (Q/R/B/N) and labels
+- Control labels, move list, and captured pieces tuned for readability
 
 ### ⚡ Performance and Compatibility
 - **Manifest V3** (side panel API)
@@ -76,20 +78,24 @@ chess/
 - Full state saved for undo (castling rights, en passant, halfmove clock, hasMoved)
 
 ### Artificial Intelligence (`bot.js`)
-- Minimax + alpha-beta, depth by difficulty (2/3/4)
-- Positional evaluation (material, tables, center, king safety, pawn structure)
+- Minimax + alpha-beta, depth by difficulty (2/3/3) with transposition table and move ordering
+- Positional evaluation (material, tables, center, king safety, pawn structure) and quiescence
+- Async best-move path to avoid UI stalls on harder searches
+- AI turn is bound to its configured color
 
 ### Interface (`index.html`, `styles.css`, `game.js`)
 - Responsive board sizing via CSS variables and `clamp()`
 - Themes (classic/dark/high-contrast) and sound toggle
-- Flip board, grouped move list, castling hints
+- Flip board with corrected selection on flipped layouts
+- Grouped move list, castling hints, and higher-contrast move/captured displays
 - Promotion shortcuts (Q/R/B/N) and labeled buttons
 - Time controls (5/10/15/30) and low-time highlight
 - Preferences persisted in `localStorage`
 
 ### State Management (`game.js`)
 - Event handling, timers, persistence, sounds
-- AI turn coordination and promotion flow
+- AI turn coordination bound to AI color with async scheduling for hard searches
+- Promotion flow with modal shortcuts
 
 ## 🚀 Installation and Development
 
@@ -122,9 +128,9 @@ cd chess
 Edit `bot.js`:
 ```javascript
 const DIFFICULTY_SETTINGS = {
-    easy: { depth: 2, randomness: 0.3 },
-    medium: { depth: 3, randomness: 0.15 },
-    hard: { depth: 4, randomness: 0.05 }
+  easy: { depth: 2, randomness: 0.3 },
+  medium: { depth: 3, randomness: 0.15 },
+  hard: { depth: 3, randomness: 0.05 }
 };
 ```
 
@@ -228,6 +234,12 @@ const DEBUG_MODE = true;
 - Automated testing
 
 ## 📝 Changelog
+
+### v2.0.0
+- ✅ AI bound to its color so the bot never moves the player's pieces
+- ✅ Hard difficulty capped to depth 3 with async yielding to keep the UI responsive
+- ✅ Improved readability for move list, captured pieces, and control labels across themes
+- ✅ Flip-board selection fix for accurate targeting when flipped
 
 ### v1.1.0
 - ✅ Themes (classic/dark/high-contrast)
