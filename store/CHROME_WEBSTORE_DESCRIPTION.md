@@ -2,7 +2,7 @@
 Advanced Chess - Sidebar Game
 
 ### 📝 Short Description (132 characters max)
-Play complete chess in Chrome sidebar. Human vs Human or vs AI with 3 difficulties. No ads, completely free!
+Full chess in Chrome sidebar: themes, sounds, flip, timers, undo, smart AI (3 levels) that only moves its side. Free, no ads.
 
 ### 📝 Detailed Description
 
@@ -18,17 +18,22 @@ Transform your Chrome sidebar into a complete chess platform! Play without inter
 • Hard: Challenge for experienced players
 
 **♛ COMPLETE FEATURES**
-✅ **All official rules** - Castling, en passant, promotion
-✅ **Automatic detection** - Check, checkmate, stalemate
-✅ **Integrated timer** - 15 minutes per player
-✅ **Complete history** - All moves recorded
-✅ **Undo moves** - Fix mistakes easily
-✅ **Visual suggestions** - Valid moves highlighted
+✅ **All official rules** - Castling, en passant, promotion, threefold, 50-move rule
+✅ **Automatic detection** - Check, checkmate, stalemate, draws
+✅ **Integrated timers** - Presets (5/10/15/30) with highlights for low time
+✅ **Complete history** - Grouped move list with last-move highlights
+✅ **Undo moves** - In bot games, undo reverts both player and AI moves
+✅ **Visual suggestions** - Valid moves and captures highlighted
+✅ **Promotion modal** - Clear piece icons + keyboard shortcuts (Q/R/B/N)
+✅ **Castling hints** - Explains why castling is blocked
+✅ **Preferences saved** - Theme, sound, flip, and timer persist
 
 **🎨 PREMIUM DESIGN**
-✅ **Elegant interface** - Professional board with coordinates
-✅ **Smooth animations** - Immersive visual feedback
-✅ **Responsive** - Optimized for sidebar (900px+)
+✅ **Themes** - Classic, Dark, and High Contrast for accessibility
+✅ **Sound toggle** - Move, capture, check, and game-over cues
+✅ **Flip board** - Play from either perspective
+✅ **Responsive** - Optimized for sidebar with `clamp()` sizing
+✅ **Readable UI** - High-contrast move list, captured pieces, and controls
 ✅ **Unicode pieces** - Sharp symbols at any resolution
 
 **🔒 TOTAL PRIVACY**
@@ -38,9 +43,9 @@ Transform your Chrome sidebar into a complete chess platform! Play without inter
 ✅ **No tracking** - Your games are 100% private
 
 **⚡ OPTIMIZED PERFORMANCE**
-✅ **Instant loading** - Ready in less than 100ms
-✅ **Fast AI** - Responses in milliseconds
-✅ **Low consumption** - Less than 10MB memory
+✅ **Instant loading** - Ready in under a second
+✅ **Responsive AI** - Async hard mode to keep the UI smooth
+✅ **Low consumption** - Lightweight, no external deps
 ✅ **Manifest V3** - Latest Chrome technology
 
 **🎯 PERFECT FOR:**
@@ -59,11 +64,11 @@ Transform your Chrome sidebar into a complete chess platform! Play without inter
 No complicated setup, no registration, no complications. Just pure, quality chess in your sidebar!
 
 **🏅 UNIQUE FEATURES:**
-• Only chess game specifically optimized for sidebar
-• AI with Minimax algorithm and alpha-beta pruning
-• Interface designed not to interrupt your browsing
-• Clean design that works at any resolution
-• Completely free with no limitations
+• Optimized for the Chrome sidebar (side panel)
+• AI with Minimax + alpha-beta, move ordering, quiescence
+• AI is locked to its color and validates moves to avoid errors
+• Clean, responsive design with accessibility-focused themes
+• Completely free with no limitations or ads
 
 Install now and discover why we're the #1 choice for chess in Chrome!
 
