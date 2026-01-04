@@ -226,14 +226,14 @@ const DEBUG_MODE = true;
 4. Follow existing code standards
 5. Test on different resolutions
 
-### Areas for Contribution
-- Bot AI improvements
-- New visual themes
-- Performance optimizations
-- Additional features
-- Automated testing
 
 ## 📝 Changelog
+
+### v2.0.3
+- ✅ AI now attempts fallback even when the primary AI move is invalid, preventing stalls after a bad suggestion
+
+### v2.0.2
+- ✅ AI move validation against legal moves and robust fallbacks (capture-first, then any legal move) when best-move selection fails
 
 ### v2.0.1
 - ✅ Enforced turn legality so AI cannot move the human player's pieces; fallbacks if AI returns an invalid move

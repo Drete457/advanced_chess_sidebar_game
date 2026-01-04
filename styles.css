@@ -704,12 +704,20 @@ body.theme-contrast .piece[data-color="black"] { color: #000000; text-shadow: 0 
     border: 2px solid rgba(0, 0, 0, 0.1);
     border-radius: 10px;
     transition: all 0.2s ease;
+    color: var(--text-color);
 }
 
 .promotion-piece:hover {
     border-color: #007bff;
     background: #f0f8ff;
     transform: scale(1.05);
+}
+
+.promo-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+    color: inherit;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
 }
 
 #newGameFromModal {
@@ -735,6 +743,27 @@ body.theme-contrast .piece[data-color="black"] { color: #000000; text-shadow: 0 
 .promo-label {
     font-size: 0.8rem;
     color: var(--muted);
+}
+
+/* Promotion contrast tuning */
+body.theme-contrast .promotion-piece {
+    background: #0b0b0b;
+    border: 2px solid var(--header-border);
+    color: #ffd700;
+}
+
+body.theme-contrast .promotion-piece:hover {
+    background: #1a1a1a;
+    border-color: #ffa000;
+}
+
+body.theme-contrast .promo-icon {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.85), 0 0 4px rgba(255, 215, 0, 0.35);
+}
+
+body.theme-contrast .promo-label {
+    color: #fefefe;
 }
 
 /* Responsiveness for sidebar */

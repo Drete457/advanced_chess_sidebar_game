@@ -591,6 +591,60 @@ class ChessAI {
     // Main method to get AI move
     async getAIMove(game, aiColor) {
         const color = aiColor || game.getGameState().currentPlayer;
+        const legal = game.getAllPossibleMoves(color);
+
+        const findLegalMove = (candidate) => {
+            if (!candidate || candidate.length !== 2) return null;
+            const [from, to] = candidate;
+            for (const { piece, moves } of legal) {
+                if (piece.color !== color) continue;
+                if (piece.position.row === from.row && piece.position.col === from.col) {
+                    const dest = moves.find(m => m.row === to.row && m.col === to.col);
+                    if (dest) return [piece.position, dest];
+                }
+            }
+            return null;
+        };
+
+        const fallbackCaptureFirst = () => {
+            const board = game.getGameState().board;
+            for (const { piece, moves } of legal) {
+                for (const move of moves) {
+                    const target = board[move.row][move.col];
+                    if (target && target.color !== piece.color) {
+                        return [piece.position, move];
+                    }
+                }
+            }
+            return null;
+        };
+
+        const fallbackAny = () => {
+            for (const { piece, moves } of legal) {
+                if (moves.length) return [piece.position, moves[0]];
+            }
+            return null;
+        };
+
+        const pickMove = () => {
+            switch (this.difficulty) {
+                case DIFFICULTIES.EASY:
+                    if (Math.random() < 0.6) {
+                        return this.getRandomMove(game, color);
+                    }
+                    return this.getBestMove(game, color);
+                case DIFFICULTIES.MEDIUM:
+                    if (Math.random() < 0.2) {
+                        return this.getRandomMove(game, color);
+                    }
+                    return this.getBestMove(game, color);
+                case DIFFICULTIES.HARD:
+                    return this.getBestMoveAsync(game, color);
+                default:
+                    return this.getBestMove(game, color);
+            }
+        };
+
         // Simulate "thinking" time
         await new Promise(resolve => {
             const thinkingTime = this.difficulty === DIFFICULTIES.EASY ? 300 : 
@@ -598,29 +652,9 @@ class ChessAI {
             setTimeout(resolve, thinkingTime);
         });
 
-        // Different strategies based on difficulty
-        switch (this.difficulty) {
-            case DIFFICULTIES.EASY:
-                // 60% chance of random move, 40% best move
-                if (Math.random() < 0.6) {
-                    return this.getRandomMove(game, color);
-                }
-                return this.getBestMove(game, color);
-
-            case DIFFICULTIES.MEDIUM:
-                // 20% chance of random move, 80% best move
-                if (Math.random() < 0.2) {
-                    return this.getRandomMove(game, color);
-                }
-                return this.getBestMove(game, color);
-
-            case DIFFICULTIES.HARD:
-                // Always best move
-                return this.getBestMoveAsync(game, color);
-
-            default:
-                return this.getBestMove(game, color);
-        }
+        const chosen = await pickMove();
+        const validated = findLegalMove(chosen) || fallbackCaptureFirst() || fallbackAny();
+        return validated;
     }
 
     // Change difficulty

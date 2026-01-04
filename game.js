@@ -365,7 +365,13 @@ class ChessGameController {
 
             const executeMove = async (candidate, allowFallback) => {
                 const validMove = validateAIMove(candidate);
-                if (!validMove) return false;
+                if (!validMove) {
+                    if (allowFallback) {
+                        const fallback = pickFallbackMove();
+                        return fallback ? executeMove(fallback, false) : false;
+                    }
+                    return false;
+                }
                 const [from, to] = validMove;
                 const piece = this.game.board[from.row][from.col];
                 const isPromotion = piece && piece.type === PIECE_TYPES.PAWN && (to.row === 0 || to.row === 7);
