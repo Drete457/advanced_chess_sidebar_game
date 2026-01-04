@@ -1,11 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Advanced Chess - Sidebar Game",
-  "version": "1.0.0",
-  "description": "Play advanced chess in a convenient sidebar. Features human vs human and human vs bot modes with multiple difficulty levels.",
+  "version": "2.0.3",
+  "description": "Advanced chess in the Chrome side panel with themes, sounds, flip board, time controls, and saved preferences.",
   "permissions": [
-    "sidePanel"
+    "sidePanel",
+    "notifications"
   ],
+  "host_permissions": [],
   "action": {
     "default_title": "Open Chess Game"
   },

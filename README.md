@@ -1,6 +1,6 @@
 # Advanced Chess - Sidebar Game
 
-A Chrome extension that offers a complete chess experience directly in the browser sidebar, optimized for players of all levels.
+Chrome extension that brings a full chess experience to the browser side panel, now with themes, sounds, board flip, saved preferences, and improved accessibility/AI handling.
 
 ## 📋 Overview
 
@@ -9,36 +9,34 @@ This extension transforms Chrome's sidebar into an advanced chess platform, allo
 ## 🎯 Main Features
 
 ### 🎮 Game Modes
-- **Human vs Human**: Local game for two players
-- **Human vs Bot**: Artificial intelligence with 3 difficulty levels
-  - **Easy**: Basic AI, ideal for beginners
-  - **Medium**: Intermediate AI with moderate strategies
-  - **Hard**: Advanced AI with deep analysis
+- **Human vs Human**
+- **Human vs Bot**: AI with 3 difficulty levels (Easy, Medium, Hard)
 
-### ♛ Game Features
-- **Complete chess engine** with all official rules
-- **Automatic detection** of check, checkmate and stalemate
-- **Pawn promotion** with interactive piece selection
-- **Castling** and **en passant** implemented
-- **Complete move history** with algebraic notation
-- **Undo system** for moves
-- **Integrated timer** (15 minutes per player by default)
+### ♛ Game Rules
+- Official rules: check/checkmate/stalemate, en passant, castling, promotion
+- Draws: insufficient material, threefold repetition, 50-move rule
+- Undo with full state restoration
+
+### 🤖 AI
+- Minimax with alpha-beta pruning, positional evaluation, move ordering, and quiescence
+- Depth per difficulty (2/3/3 plies) with async yielding to keep the UI responsive
+- Explicit color handling so the bot only moves its own side
 
 ### 🎨 Interface and UX
-- **Responsive design** optimized for sidebar (900px+ width)
-- **Interactive board** with coordinates (a-h, 1-8)
-- **Visual highlights** for valid moves and captures
-- **Smooth animations** for piece movement
-- **Captured pieces** displayed in real time
-- **Move suggestions** available
-- **Visual indicators** for check and last move
+- **Responsive board** with `clamp()` sizing and optional flip
+- **Themes**: classic, dark, high-contrast
+- **Sound toggle** with move/capture/check/gameover cues
+- **Time controls** presets (5, 10, 15, 30 minutes)
+- **Preferences persistence** (theme, sound, flip, time)
+- **Grouped move history** by move number with improved contrast per theme
+- **Castling hints** explaining unavailability
+- Promotion modal with shortcuts (Q/R/B/N) and labels
+- Control labels, move list, and captured pieces tuned for readability
 
 ### ⚡ Performance and Compatibility
-- **Manifest V3** - Compatible with latest specifications
-- **Native Chrome Sidebar API**
-- **No external dependencies** - Works offline
-- **No data collection** - Completely private
-- **Performance optimized** - Pure vanilla JavaScript
+- **Manifest V3** (side panel API)
+- Works fully offline, no external dependencies
+- Privacy-first (no data collection)
 
 ## 📁 Project Structure
 
@@ -46,11 +44,11 @@ This extension transforms Chrome's sidebar into an advanced chess platform, allo
 chess/
 ├── manifest.json              # Chrome extension configuration
 ├── background.js              # Service worker for sidebar management
-├── index.html                 # Main game interface
-├── styles.css                 # Styles optimized for sidebar
+├── index.html                 # Main game interface and controls (themes, flip, timers, sound)
+├── styles.css                 # Responsive styles, themes, accessibility
 ├── chess.js                   # Chess engine and game logic
 ├── bot.js                     # Bot artificial intelligence
-├── game.js                    # Main controller and UI
+├── game.js                    # Main controller, UI, persistence, sounds
 ├── icons/                     # Extension icons
 │   ├── icon16.png            # 16x16 icon
 │   ├── icon32.png            # 32x32 icon
@@ -74,38 +72,30 @@ chess/
 ```
 
 ### Chess Engine (`chess.js`)
-- **Board representation**: 8x8 array with piece objects
-- **Move validation**: Specific algorithms per piece type
-- **Check detection**: King threat analysis
-- **Move generation**: Real-time valid moves list
-- **Game state**: Complete position and history tracking
+- 8x8 board with pieces, move validation per piece
+- King safety in simulations (en passant, castling transit squares)
+- Draws: threefold repetition, 50-move rule, insufficient material
+- Full state saved for undo (castling rights, en passant, halfmove clock, hasMoved)
 
 ### Artificial Intelligence (`bot.js`)
-- **Minimax algorithm** with alpha-beta pruning
-- **Variable depth** based on difficulty:
-  - Easy: 2 levels of depth
-  - Medium: 3 levels of depth  
-  - Hard: 4+ levels with optimizations
-- **Evaluation function** considers:
-  - Material value of pieces
-  - Strategic positioning
-  - Center control
-  - King safety
-  - Pawn structure
+- Minimax + alpha-beta, depth by difficulty (2/3/3) with transposition table and move ordering
+- Positional evaluation (material, tables, center, king safety, pawn structure) and quiescence
+- Async best-move path to avoid UI stalls on harder searches
+- AI turn is bound to its configured color
 
-### Responsive Interface (`styles.css`)
-- **CSS Grid** for board layout
-- **Flexbox** for UI components
-- **Media queries** for different sidebar sizes
-- **CSS Custom Properties** for themes
-- **CSS Animations** for visual feedback
+### Interface (`index.html`, `styles.css`, `game.js`)
+- Responsive board sizing via CSS variables and `clamp()`
+- Themes (classic/dark/high-contrast) and sound toggle
+- Flip board with corrected selection on flipped layouts
+- Grouped move list, castling hints, and higher-contrast move/captured displays
+- Promotion shortcuts (Q/R/B/N) and labeled buttons
+- Time controls (5/10/15/30) and low-time highlight
+- Preferences persisted in `localStorage`
 
 ### State Management (`game.js`)
-- **Event listeners** for user interaction
-- **State management** for current game mode
-- **Timer management** with setInterval
-- **Optimized DOM manipulation**
-- **Modal handling** for promotions and game end
+- Event handling, timers, persistence, sounds
+- AI turn coordination bound to AI color with async scheduling for hard searches
+- Promotion flow with modal shortcuts
 
 ## 🚀 Installation and Development
 
@@ -138,9 +128,9 @@ cd chess
 Edit `bot.js`:
 ```javascript
 const DIFFICULTY_SETTINGS = {
-    easy: { depth: 2, randomness: 0.3 },
-    medium: { depth: 3, randomness: 0.15 },
-    hard: { depth: 4, randomness: 0.05 }
+  easy: { depth: 2, randomness: 0.3 },
+  medium: { depth: 3, randomness: 0.15 },
+  hard: { depth: 3, randomness: 0.05 }
 };
 ```
 
@@ -236,25 +226,34 @@ const DEBUG_MODE = true;
 4. Follow existing code standards
 5. Test on different resolutions
 
-### Areas for Contribution
-- Bot AI improvements
-- New visual themes
-- Performance optimizations
-- Additional features
-- Automated testing
 
 ## 📝 Changelog
 
-### v1.0.0 (Initial Release)
-- ✅ Complete chess engine
-- ✅ Human vs Human mode
-- ✅ Human vs Bot mode (3 difficulties)
-- ✅ Responsive sidebar interface
-- ✅ Timer system
-- ✅ Move history
-- ✅ Check/checkmate detection
-- ✅ Pawn promotion
-- ✅ Manifest V3 compliance
+### v2.0.3
+- ✅ AI now attempts fallback even when the primary AI move is invalid, preventing stalls after a bad suggestion
+
+### v2.0.2
+- ✅ AI move validation against legal moves and robust fallbacks (capture-first, then any legal move) when best-move selection fails
+
+### v2.0.1
+- ✅ Enforced turn legality so AI cannot move the human player's pieces; fallbacks if AI returns an invalid move
+
+### v2.0.0
+- ✅ AI bound to its color so the bot never moves the player's pieces
+- ✅ Hard difficulty capped to depth 3 with async yielding to keep the UI responsive
+- ✅ Improved readability for move list, captured pieces, and control labels across themes
+- ✅ Flip-board selection fix for accurate targeting when flipped
+
+### v1.1.0
+- ✅ Themes (classic/dark/high-contrast)
+- ✅ Sound toggle with cues
+- ✅ Flip board
+- ✅ Time controls presets and persistence
+- ✅ Move history grouping and castling hints
+- ✅ Rule completeness: threefold, 50-move rule, safer castling/en passant
+
+### v1.0.0
+- Initial release
 
 ## 📄 License
 

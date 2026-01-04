@@ -64,6 +64,7 @@ class ChessGame {
         this.capturedPieces = { white: [], black: [] };
         this.gameOver = false;
         this.winner = undefined;
+        this.drawReason = undefined;
         this.selectedSquare = undefined;
         this.validMoves = [];
         this.inCheck = { white: false, black: false };
@@ -72,6 +73,10 @@ class ChessGame {
             black: { kingside: true, queenside: true }
         };
         this.enPassantTarget = undefined;
+        this.halfmoveClock = 0; // 50-move rule counter (half-moves)
+        this.positionCounts = new Map(); // repetition detection
+        this.stateStack = [];
+        this.recordPosition();
     }
 
     createInitialBoard() {
@@ -108,9 +113,12 @@ class ChessGame {
             },
             gameOver: this.gameOver,
             winner: this.winner,
+            drawReason: this.drawReason,
             inCheck: { ...this.inCheck },
             castlingRights: JSON.parse(JSON.stringify(this.castlingRights)),
-            enPassantTarget: this.enPassantTarget ? { ...this.enPassantTarget } : undefined
+            enPassantTarget: this.enPassantTarget ? { ...this.enPassantTarget } : undefined,
+            halfmoveClock: this.halfmoveClock,
+            fullmoveNumber: Math.floor(this.moveHistory.length / 2) + 1
         };
     }
 
@@ -173,15 +181,30 @@ class ChessGame {
 
     // Make a move
     makeMove(from, to, promotionPiece) {
+        if (!this.isValidPosition(from?.row, from?.col) || !this.isValidPosition(to?.row, to?.col)) {
+            return false;
+        }
         const piece = this.board[from.row][from.col];
         if (!piece) return false;
+        if (piece.color !== this.currentPlayer) {
+            return false; // Enforce turn: only the side to move may act
+        }
+
+        // Snapshot state for undo
+        this.stateStack.push(this.cloneState());
 
         const capturedPiece = this.board[to.row][to.col];
         let isEnPassant = false;
         let isCastling = false;
 
+        const prevCastlingRights = JSON.parse(JSON.stringify(this.castlingRights));
+        const prevEnPassantTarget = this.enPassantTarget ? { ...this.enPassantTarget } : undefined;
+        const prevHalfmoveClock = this.halfmoveClock;
+        const prevPieceHasMoved = piece.hasMoved;
+        let prevRookHasMoved = false;
+
         // Check en passant
-        if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget && 
+        if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget &&
             to.row === this.enPassantTarget.row && to.col === this.enPassantTarget.col) {
             isEnPassant = true;
             const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
@@ -193,12 +216,15 @@ class ChessGame {
         }
 
         // Check castling
+        let rookFromCol;
+        let rookToCol;
         if (piece.type === PIECE_TYPES.KING && Math.abs(to.col - from.col) === 2) {
             isCastling = true;
-            const rookFromCol = to.col > from.col ? 7 : 0;
-            const rookToCol = to.col > from.col ? to.col - 1 : to.col + 1;
+            rookFromCol = to.col > from.col ? 7 : 0;
+            rookToCol = to.col > from.col ? to.col - 1 : to.col + 1;
             const rook = this.board[from.row][rookFromCol];
             if (rook) {
+                prevRookHasMoved = rook.hasMoved;
                 this.board[from.row][rookToCol] = rook;
                 this.board[from.row][rookFromCol] = null;
                 rook.position = { row: from.row, col: rookToCol };
@@ -226,8 +252,19 @@ class ChessGame {
             }
         }
 
-        // Update castling rights
+        // Update castling rights for moving piece
         this.updateCastlingRights(piece, from);
+
+        // Update castling rights if a rook was captured
+        if (capturedPiece && capturedPiece.type === PIECE_TYPES.ROOK) {
+            if (capturedPiece.color === COLORS.WHITE) {
+                if (to.row === 7 && to.col === 0) this.castlingRights.white.queenside = false;
+                if (to.row === 7 && to.col === 7) this.castlingRights.white.kingside = false;
+            } else {
+                if (to.row === 0 && to.col === 0) this.castlingRights.black.queenside = false;
+                if (to.row === 0 && to.col === 7) this.castlingRights.black.kingside = false;
+            }
+        }
 
         // Set en passant target
         this.enPassantTarget = undefined;
@@ -236,6 +273,13 @@ class ChessGame {
                 row: piece.color === COLORS.WHITE ? from.row - 1 : from.row + 1,
                 col: from.col
             };
+        }
+
+        // Halfmove clock (50-move rule)
+        if (piece.type === PIECE_TYPES.PAWN || capturedPiece || isEnPassant) {
+            this.halfmoveClock = 0;
+        } else {
+            this.halfmoveClock += 1;
         }
 
         // Create move object
@@ -247,7 +291,14 @@ class ChessGame {
             isEnPassant,
             isCastling,
             promotionPiece,
-            notation: this.generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling)
+            notation: this.generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling),
+            prevCastlingRights,
+            prevEnPassantTarget,
+            prevHalfmoveClock,
+            prevPieceHasMoved,
+            rookFromCol,
+            rookToCol,
+            prevRookHasMoved
         };
 
         this.moveHistory.push(move);
@@ -257,6 +308,9 @@ class ChessGame {
 
         // Check for check and checkmate
         this.updateCheckStatus();
+
+        // Record position for repetition detection before draw checks that rely on it
+        move.positionKey = this.recordPosition();
         this.checkGameEnd();
 
         return true;
@@ -395,9 +449,13 @@ class ChessGame {
         if (!piece.hasMoved && !this.inCheck[piece.color]) {
             // Kingside castling
             if (this.castlingRights[piece.color].kingside) {
-                if (!this.board[row][col + 1] && !this.board[row][col + 2]) {
+                const pathClear = !this.board[row][col + 1] && !this.board[row][col + 2];
+                if (pathClear) {
                     const rook = this.board[row][7];
-                    if (rook && !rook.hasMoved) {
+                    const oppColor = piece.color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+                    const safeSquares = !this.isSquareAttacked(row, col + 1, oppColor) &&
+                                        !this.isSquareAttacked(row, col + 2, oppColor);
+                    if (rook && !rook.hasMoved && safeSquares) {
                         moves.push({ row, col: col + 2 });
                     }
                 }
@@ -405,9 +463,13 @@ class ChessGame {
 
             // Queenside castling
             if (this.castlingRights[piece.color].queenside) {
-                if (!this.board[row][col - 1] && !this.board[row][col - 2] && !this.board[row][col - 3]) {
+                const pathClear = !this.board[row][col - 1] && !this.board[row][col - 2] && !this.board[row][col - 3];
+                if (pathClear) {
                     const rook = this.board[row][0];
-                    if (rook && !rook.hasMoved) {
+                    const oppColor = piece.color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+                    const safeSquares = !this.isSquareAttacked(row, col - 1, oppColor) &&
+                                        !this.isSquareAttacked(row, col - 2, oppColor);
+                    if (rook && !rook.hasMoved && safeSquares) {
                         moves.push({ row, col: col - 2 });
                     }
                 }
@@ -468,20 +530,115 @@ class ChessGame {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
+    isSquareAttacked(row, col, byColor) {
+        // Scan all pieces of the attacker color and see if they attack the square
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = this.board[r][c];
+                if (piece && piece.color === byColor) {
+                    const attacks = this.getPieceAttacks(piece);
+                    if (attacks.some(pos => pos.row === row && pos.col === col)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    generatePositionKey() {
+        const boardKey = this.board.map(row => row.map(piece => {
+            if (!piece) return '.';
+            const colorChar = piece.color === COLORS.WHITE ? 'w' : 'b';
+            const typeChar = piece.type[0];
+            return typeChar + colorChar;
+        }).join('')).join('/');
+
+        const toMove = this.currentPlayer === COLORS.WHITE ? 'w' : 'b';
+
+        const castling = [
+            this.castlingRights.white.kingside ? 'K' : '',
+            this.castlingRights.white.queenside ? 'Q' : '',
+            this.castlingRights.black.kingside ? 'k' : '',
+            this.castlingRights.black.queenside ? 'q' : ''
+        ].join('') || '-';
+
+        const enPassant = this.enPassantTarget ? `${this.enPassantTarget.row}${this.enPassantTarget.col}` : '-';
+
+        return `${boardKey}|${toMove}|${castling}|${enPassant}`;
+    }
+
+    recordPosition() {
+        const key = this.generatePositionKey();
+        const count = this.positionCounts.get(key) || 0;
+        this.positionCounts.set(key, count + 1);
+        return key;
+    }
+
+    getCastlingDiagnostics(color) {
+        const reasons = { kingside: [], queenside: [] };
+        const kingPos = this.findKing(color);
+        if (!kingPos) return reasons;
+        const king = this.board[kingPos.row][kingPos.col];
+        const backRank = color === COLORS.WHITE ? 7 : 0;
+        const opp = color === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+
+        const evaluateSide = (side) => {
+            const rookCol = side === 'kingside' ? 7 : 0;
+            const step = side === 'kingside' ? 1 : -1;
+            const targetCol = side === 'kingside' ? 6 : 2;
+            const throughCol = side === 'kingside' ? 5 : 3;
+            const farCol = side === 'kingside' ? null : 1;
+
+            const rook = this.board[backRank][rookCol];
+            if (!rook || rook.type !== PIECE_TYPES.ROOK) reasons[side].push('Rook missing');
+            if (rook && rook.hasMoved) reasons[side].push('Rook already moved');
+            if (!king || king.hasMoved) reasons[side].push('King already moved');
+            if (this.inCheck[color]) reasons[side].push('King is in check');
+
+            if (this.board[backRank][kingPos.col + step]) reasons[side].push('Square next to king occupied');
+            if (this.board[backRank][targetCol]) reasons[side].push('Destination square occupied');
+            if (farCol !== null && this.board[backRank][farCol]) reasons[side].push('Path blocked');
+
+            if (this.isSquareAttacked(backRank, kingPos.col + step, opp)) reasons[side].push('Square next to king is attacked');
+            if (this.isSquareAttacked(backRank, targetCol, opp)) reasons[side].push('Destination square is attacked');
+
+            if (!this.castlingRights[color][side]) reasons[side].push('Castling rights lost');
+        };
+
+        evaluateSide('kingside');
+        evaluateSide('queenside');
+        return reasons;
+    }
+
     wouldBeInCheck(from, to) {
-        // Make temporary move
         const piece = this.board[from.row][from.col];
         const capturedPiece = this.board[to.row][to.col];
-        
+
+        let enPassantCapture = null;
+
+        // Handle en passant capture removal during simulation
+        if (piece.type === PIECE_TYPES.PAWN && this.enPassantTarget &&
+            to.row === this.enPassantTarget.row && to.col === this.enPassantTarget.col &&
+            !capturedPiece) {
+            const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
+            enPassantCapture = this.board[capturedPawnRow][to.col];
+            this.board[capturedPawnRow][to.col] = null;
+        }
+
+        // Make temporary move
         this.board[to.row][to.col] = piece;
         this.board[from.row][from.col] = null;
 
-        // Check if king is in check
         const inCheck = this.isKingInCheck(piece.color);
 
         // Undo move
         this.board[from.row][from.col] = piece;
         this.board[to.row][to.col] = capturedPiece;
+        if (enPassantCapture) {
+            const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
+            this.board[capturedPawnRow][to.col] = enPassantCapture;
+        }
 
         return inCheck;
     }
@@ -600,6 +757,7 @@ class ChessGame {
     }
 
     checkGameEnd() {
+        this.drawReason = undefined;
         const hasValidMoves = this.hasValidMoves(this.currentPlayer);
 
         if (!hasValidMoves) {
@@ -607,17 +765,30 @@ class ChessGame {
                 // Checkmate
                 this.gameOver = true;
                 this.winner = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
+                this.drawReason = undefined;
             } else {
                 // Stalemate draw
                 this.gameOver = true;
                 this.winner = 'draw';
+                this.drawReason = 'Stalemate';
             }
         }
 
         // Check other draw conditions
-        if (this.isDrawByInsufficientMaterial() || this.isDrawByRepetition()) {
-            this.gameOver = true;
-            this.winner = 'draw';
+        if (!this.gameOver) {
+            if (this.isDrawByInsufficientMaterial()) {
+                this.gameOver = true;
+                this.winner = 'draw';
+                this.drawReason = 'Insufficient material';
+            } else if (this.isDrawByRepetition()) {
+                this.gameOver = true;
+                this.winner = 'draw';
+                this.drawReason = 'Threefold repetition';
+            } else if (this.halfmoveClock >= 100) {
+                this.gameOver = true;
+                this.winner = 'draw';
+                this.drawReason = 'Fifty-move rule';
+            }
         }
     }
 
@@ -659,8 +830,9 @@ class ChessGame {
     }
 
     isDrawByRepetition() {
-        // Simplified implementation - in practice would be more complex
-        return false;
+        const key = this.generatePositionKey();
+        const count = this.positionCounts.get(key) || 0;
+        return count >= 3;
     }
 
     generateMoveNotation(piece, from, to, capturedPiece, isEnPassant, isCastling) {
@@ -708,46 +880,14 @@ class ChessGame {
     undoMove() {
         if (this.moveHistory.length === 0) return false;
 
-        const lastMove = this.moveHistory.pop();
-        const { from, to, piece, capturedPiece, isEnPassant, isCastling } = lastMove;
+        // Drop last move from notation/history
+        this.moveHistory.pop();
 
-        // Restore piece to original position
-        this.board[from.row][from.col] = piece;
-        this.board[to.row][to.col] = capturedPiece || null;
-        piece.position = from;
+        const prevState = this.stateStack.pop();
+        if (!prevState) return false;
 
-        // Undo en passant
-        if (isEnPassant && capturedPiece) {
-            const capturedPawnRow = piece.color === COLORS.WHITE ? to.row + 1 : to.row - 1;
-            this.board[capturedPawnRow][to.col] = capturedPiece;
-            this.capturedPieces[capturedPiece.color].pop();
-        }
-
-        // Undo castling
-        if (isCastling) {
-            const rookToCol = to.col > from.col ? 7 : 0;
-            const rookFromCol = to.col > from.col ? to.col - 1 : to.col + 1;
-            const rook = this.board[from.row][rookFromCol];
-            if (rook) {
-                this.board[from.row][rookToCol] = rook;
-                this.board[from.row][rookFromCol] = null;
-                rook.position = { row: from.row, col: rookToCol };
-            }
-        }
-
-        // Remove captured piece from captured pieces list
-        if (capturedPiece && !isEnPassant) {
-            this.capturedPieces[capturedPiece.color].pop();
-        }
-
-        // Switch player
-        this.currentPlayer = this.currentPlayer === COLORS.WHITE ? COLORS.BLACK : COLORS.WHITE;
-
-        // Reset game state
-        this.gameOver = false;
-        this.winner = undefined;
+        this.restoreState(prevState);
         this.updateCheckStatus();
-
         return true;
     }
 
@@ -759,6 +899,7 @@ class ChessGame {
         this.capturedPieces = { white: [], black: [] };
         this.gameOver = false;
         this.winner = undefined;
+        this.drawReason = undefined;
         this.selectedSquare = undefined;
         this.validMoves = [];
         this.inCheck = { white: false, black: false };
@@ -767,6 +908,59 @@ class ChessGame {
             black: { kingside: true, queenside: true }
         };
         this.enPassantTarget = undefined;
+        this.halfmoveClock = 0;
+        this.positionCounts = new Map();
+        this.stateStack = [];
+        this.recordPosition();
+    }
+
+    clonePiece(piece) {
+        if (!piece) return null;
+        const copy = new Piece(piece.type, piece.color, { ...piece.position });
+        copy.hasMoved = piece.hasMoved;
+        return copy;
+    }
+
+    cloneState() {
+        const cloneBoard = this.board.map(row => row.map(p => this.clonePiece(p)));
+        const cloneCaptured = {
+            white: this.capturedPieces.white.map(p => this.clonePiece(p)),
+            black: this.capturedPieces.black.map(p => this.clonePiece(p))
+        };
+        return {
+            board: cloneBoard,
+            currentPlayer: this.currentPlayer,
+            moveHistory: [...this.moveHistory],
+            capturedPieces: cloneCaptured,
+            gameOver: this.gameOver,
+            winner: this.winner,
+            drawReason: this.drawReason,
+            inCheck: { ...this.inCheck },
+            castlingRights: JSON.parse(JSON.stringify(this.castlingRights)),
+            enPassantTarget: this.enPassantTarget ? { ...this.enPassantTarget } : undefined,
+            halfmoveClock: this.halfmoveClock,
+            positionCounts: new Map(this.positionCounts)
+        };
+    }
+
+    restoreState(state) {
+        this.board = state.board.map(row => row.map(p => this.clonePiece(p)));
+        this.currentPlayer = state.currentPlayer;
+        this.moveHistory = [...state.moveHistory];
+        this.capturedPieces = {
+            white: state.capturedPieces.white.map(p => this.clonePiece(p)),
+            black: state.capturedPieces.black.map(p => this.clonePiece(p))
+        };
+        this.gameOver = state.gameOver;
+        this.winner = state.winner;
+        this.drawReason = state.drawReason;
+        this.inCheck = { ...state.inCheck };
+        this.castlingRights = JSON.parse(JSON.stringify(state.castlingRights));
+        this.enPassantTarget = state.enPassantTarget ? { ...state.enPassantTarget } : undefined;
+        this.halfmoveClock = state.halfmoveClock;
+        this.positionCounts = new Map(state.positionCounts);
+        this.selectedSquare = undefined;
+        this.validMoves = [];
     }
 
     // Check if game is over

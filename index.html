@@ -11,17 +11,50 @@
         <header>
             <h1>♔ Advanced Chess ♛</h1>
             <div class="game-controls">
-                <select id="gameMode">
-                    <option value="human-vs-human">Human vs Human</option>
-                    <option value="human-vs-bot">Human vs Bot</option>
-                </select>
-                <select id="difficulty" style="display: none;">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-                <button id="newGame">New Game</button>
-                <button id="undoMove">Undo</button>
+                <div class="control-group">
+                    <span class="control-label">Mode</span>
+                    <select id="gameMode">
+                        <option value="human-vs-human">Human vs Human</option>
+                        <option value="human-vs-bot">Human vs Bot</option>
+                    </select>
+                </div>
+                <div class="control-group" id="difficultyGroup" style="display: none;">
+                    <span class="control-label">Difficulty</span>
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Time</span>
+                    <select id="timeControl">
+                        <option value="5">5 | 5</option>
+                        <option value="10">10 | 10</option>
+                        <option value="15" selected>15 | 15</option>
+                        <option value="30">30 | 30</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Theme</span>
+                    <select id="themeSelect">
+                        <option value="classic" selected>Classic</option>
+                        <option value="dark">Dark</option>
+                        <option value="contrast">High Contrast</option>
+                    </select>
+                </div>
+                <div class="control-group toggle-group">
+                    <span class="control-label">Sound</span>
+                    <label class="toggle sound-toggle"><input type="checkbox" id="soundToggle" checked> Sound</label>
+                </div>
+                <div class="control-group buttons-group">
+                    <span class="control-label">Actions</span>
+                    <div class="control-buttons">
+                        <button id="flipBoard" title="Flip board">Flip</button>
+                        <button id="newGame">New Game</button>
+                        <button id="undoMove">Undo</button>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -50,16 +83,10 @@
                 <div class="chess-board-container">
                     <div class="board-with-coordinates">
                         <div class="coordinates">
-                            <div class="ranks">
-                                <span>8</span><span>7</span><span>6</span><span>5</span>
-                                <span>4</span><span>3</span><span>2</span><span>1</span>
-                            </div>
+                            <div id="ranksLeft" class="ranks"></div>
                         </div>
-                        <div id="chessBoard" class="chess-board"></div>
-                        <div class="files">
-                            <span>a</span><span>b</span><span>c</span><span>d</span>
-                            <span>e</span><span>f</span><span>g</span><span>h</span>
-                        </div>
+                        <div id="chessBoard" class="chess-board" role="grid" aria-label="Chess board"></div>
+                        <div id="filesBottom" class="files"></div>
                     </div>
                 </div>
 
@@ -83,10 +110,10 @@
         <div class="modal-content">
             <h3>Choose pawn promotion:</h3>
             <div class="promotion-pieces">
-                <button class="promotion-piece" data-piece="queen">♕</button>
-                <button class="promotion-piece" data-piece="tower">♖</button>
-                <button class="promotion-piece" data-piece="bishop">♗</button>
-                <button class="promotion-piece" data-piece="horse">♘</button>
+                <button class="promotion-piece" data-piece="queen" aria-label="Promote to Queen (Q)"><span class="promo-icon">♕</span><span class="promo-label">Queen (Q)</span></button>
+                <button class="promotion-piece" data-piece="tower" aria-label="Promote to Rook (R)"><span class="promo-icon">♖</span><span class="promo-label">Rook (R)</span></button>
+                <button class="promotion-piece" data-piece="bishop" aria-label="Promote to Bishop (B)"><span class="promo-icon">♗</span><span class="promo-label">Bishop (B)</span></button>
+                <button class="promotion-piece" data-piece="horse" aria-label="Promote to Knight (N)"><span class="promo-icon">♘</span><span class="promo-label">Knight (N)</span></button>
             </div>
         </div>
     </div>
